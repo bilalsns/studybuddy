@@ -679,16 +679,16 @@ async def edit_profile(callback_query: types.CallbackQuery, state: FSMContext):
 async def process_edit_callback(callback_query: types.CallbackQuery, state: FSMContext):
     if callback_query.data == "edit_age":
         await state.set_state(Form.edit_age)
-        await callback_query.message.answer("Please enter your new age:")
+        await callback_query.message.answer("<b>📅 Please enter your new age:</b>", parse_mode='HTML')
     elif callback_query.data == "edit_interests":
         await state.set_state(Form.edit_interests)
-        await callback_query.message.answer("Please list five to ten interests, separated by commas:")
+        await callback_query.message.answer("<b>📋 Please list five to ten interests, separated by commas:</b>", parse_mode='HTML')
     elif callback_query.data == "edit_intro":
         await state.set_state(Form.edit_intro)
-        await callback_query.message.answer("Please enter your new introduction:")
+        await callback_query.message.answer("<b>💬 Please enter your new introduction:</b>", parse_mode='HTML')
     elif callback_query.data == "edit_contact":
         await state.set_state(Form.edit_contact)
-        await callback_query.message.answer("Please enter your contact information (e.g., email, phone number):")
+        await callback_query.message.answer("<b>📬 Please enter your contact information (e.g., email, phone number):</b>", parse_mode='HTML')
     await callback_query.answer()
 
 @edit_router.message(Form.edit_age)
@@ -698,13 +698,13 @@ async def process_edit_age(message: types.Message, state: FSMContext):
 
     age = message.text
     if not age.isdigit():
-        await message.answer("Please enter a valid number for your age.", parse_mode='Markdown')
+        await message.answer("⚠️ <b>Please enter a valid number for your age.</b>", parse_mode='HTML')
         return
     await state.update_data(age=age)
     user_id = message.from_user.id
     supabase.table("telegram").update({"age": age}).eq("user_id", user_id).execute()
 
-    await message.answer("Your age has been updated.")
+    await message.answer("✅ <b>Your age has been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
 
 @edit_router.message(Form.edit_interests)
@@ -718,14 +718,14 @@ async def process_edit_interests(message: types.Message, state: FSMContext):
 
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
-        await message.answer("Please list five to ten interests, separated by commas.")
+        await message.answer("📋 <b>Please list five to ten interests, separated by commas.</b>", parse_mode='HTML')
         return
     await state.update_data(interests=interests)
 
     user_id = message.from_user.id
     supabase.table("telegram").update({"interests": interests}).eq("user_id", user_id).execute()
 
-    await message.answer("Your interests have been updated.")
+    await message.answer("✅ <b>Your interests have been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
 
 @edit_router.message(Form.edit_intro)
@@ -742,7 +742,7 @@ async def process_edit_intro(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     supabase.table("telegram").update({"bio": intro}).eq("user_id", user_id).execute()
 
-    await message.answer("Your introduction has been updated.")
+    await message.answer("✅ <b>Your introduction has been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
 
 @edit_router.message(Form.edit_contact)
@@ -756,7 +756,7 @@ async def process_edit_contact(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     supabase.table("telegram").update({"contact": contact}).eq("user_id", user_id).execute()
 
-    await message.answer("Your contact information has been updated.")
+    await message.answer("✅ <b>Your contact information has been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
 
 @profile_router.message(Form.name)
@@ -768,7 +768,7 @@ async def process_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(Form.gender)
     await message.answer(
-        "<b>🔎What is your gender?</b>",
+        "<b>🔎 What is your gender?</b>",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [KeyboardButton(text="Male"), KeyboardButton(text="Female")]
@@ -785,12 +785,12 @@ async def process_gender(message: types.Message, state: FSMContext):
 
     logging.info("Processing gender")
     if message.text not in ['Male', 'Female']:
-        await message.answer("Please choose a valid gender option: Male or Female.", parse_mode='Markdown')
+        await message.answer("⚠️ <b>Please choose a valid gender option: Male or Female.</b>", parse_mode='HTML')
         return
     await state.update_data(gender=message.text)
     await state.set_state(Form.age)
     await message.answer(
-        "<b>🔎How old are you?</b> \n<i>Important: enter a valid number for your age.</i>",
+        "<b>🔎 How old are you?</b>\n<i>Important: enter a valid number for your age.</i>",
         parse_mode="HTML",
         reply_markup=ReplyKeyboardRemove()
     )
@@ -802,11 +802,11 @@ async def process_age(message: types.Message, state: FSMContext):
 
     logging.info("Processing age")
     if not message.text.isdigit():
-        await message.answer("<b><i>Please enter a valid number for your age.</i></b>", parse_mode='HTML')
+        await message.answer("⚠️ <b>Please enter a valid number for your age.</b>", parse_mode='HTML')
         return
     await state.update_data(age=message.text)
     await state.set_state(Form.location)
-    await message.answer("<b>🔎Where are you from?</b>", parse_mode='HTML')
+    await message.answer("<b>🔎 Where are you from?</b>", parse_mode='HTML')
 
 @profile_router.message(Form.location)
 async def process_location(message: types.Message, state: FSMContext):
@@ -817,8 +817,7 @@ async def process_location(message: types.Message, state: FSMContext):
     await state.update_data(location=message.text)
     await state.set_state(Form.interests)
     await message.answer(
-        "<b>🔎list five to ten activities, hobbies, or interests of yours.</b>"
-        "<i>Important: separate them by commas.</i>",
+        "<b>🔎 List five to ten activities, hobbies, or interests of yours.</b>\n<i>Important: separate them by commas.</i>",
         parse_mode='HTML'
     )
 
@@ -835,13 +834,12 @@ async def process_interests(message: types.Message, state: FSMContext):
 
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
-        await message.answer("<i>Please, list five to ten interests, separated by commas.</i>", parse_mode='HTML')
+        await message.answer("⚠️ <i>Please, list five to ten interests, separated by commas.</i>", parse_mode='HTML')
         return
     await state.update_data(interests=interests)
     await state.set_state(Form.intro)
     await message.answer(
-        "<b>🔎Write briefly about yourself, it will be placed as your introduction to other users.</b>"
-        "<i>Include any additional information you'd like to share (e.g., test scores, major achievements).</i>",
+        "<b>🔎 Write briefly about yourself, it will be placed as your introduction to other users.</b>\n<i>Include any additional information you'd like to share (e.g., test scores, major achievements).</i>",
         parse_mode='HTML'
     )
 
@@ -859,8 +857,7 @@ async def process_intro(message: types.Message, state: FSMContext):
     await state.update_data(intro=intro)
     await state.set_state(Form.contact)
     await message.answer(
-        "<b>🔎Provide your contact information (e.g., Telegram username, Instagram, etc.)</b>"
-        "<i>Important: The contact information will be used for contacting each other and will be shared only after both sides have agreed to match.</i>",
+        "<b>🔎 Provide your contact information (e.g., Telegram username, Instagram, etc.)</b>\n<i>Important: The contact information will be used for contacting each other and will be shared only after both sides have agreed to match.</i>",
         parse_mode='HTML'
     )
 
