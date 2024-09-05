@@ -27,7 +27,7 @@ supabase = create_client(url, key)
 model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
 # Bot configuration
-API_TOKEN = '7444156288:AAGyTx6Lo8h5rpmYRVLv0_J2SFuOi38U3zc'
+API_TOKEN = '7495888476:AAGymgKPkmjYXISWNGBMtsx1XD3JC8KP7XA'
 bot_username = 'dcuz2024_bot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
