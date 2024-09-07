@@ -20,14 +20,14 @@ print(current_time_in_new_timezone)
 
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGxiZGRqdmNsbGdjcXB2dnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MTU1MTEsImV4cCI6MjAzNTM5MTUxMX0.TyymllzljjCQsd7kUUGQ_zPgC_GLnkeV64KujZRyrQU"
+key = "${SUPABASE_API_KEY}"
 supabase = create_client(url, key)
 
 # Initialize SentenceTransformer model
 model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
 # Bot configuration
-API_TOKEN = '7495888476:AAGymgKPkmjYXISWNGBMtsx1XD3JC8KP7XA'
+API_TOKEN = '${BOT_TOKEN_API}'
 bot_username = 'dcuz2024_bot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
