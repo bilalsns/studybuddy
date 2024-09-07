@@ -20,14 +20,14 @@ print(current_time_in_new_timezone)
 
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
-key = "${SUPABASE_API_KEY}"
+key = "SUPABASE_API_KEY"
 supabase = create_client(url, key)
 
 # Initialize SentenceTransformer model
 model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
 # Bot configuration
-API_TOKEN = '${BOT_TOKEN_API}'
+API_TOKEN = 'BOT_TOKEN_API'
 bot_username = 'dcuz2024_bot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
