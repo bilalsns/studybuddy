@@ -12,11 +12,9 @@ from sentence_transformers import SentenceTransformer
 from sort import *
 
 # Timezone configuration
-server_timezone = "America/Los_Angeles"
-new_timezone = "America/New_York"
+server_timezone = "Asia/Tashkent"
 current_time = datetime.now(ZoneInfo(server_timezone))
-current_time_in_new_timezone = current_time.astimezone(ZoneInfo(new_timezone))
-print(current_time_in_new_timezone)
+print(current_time)
 
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
@@ -230,10 +228,11 @@ async def find_best_match(request, user_data):
         formatted_history = f"{{{','.join(map(str, user_data['history']))}}}"
 
     
-    # Update the database with the new history and token count
+    # Update the database with the new history, last search time, and token count
     supabase.table("telegram").update({"history": formatted_history}).eq("user_id", user_data["user_id"]).execute()
     supabase.table("telegram").update({"token": user_data["token"]-1}).eq("user_id", user_data["user_id"]).execute()
-    
+    supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone))}).eq("user_id", user_data["user_id"]).execute()
+
     # Return the best match
     print(result)
     print(filtered_results)
