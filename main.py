@@ -43,7 +43,7 @@ TEXT_EDIT_PROFILE = 'Create/Edit Profile'
 MSG_WELCOME = "Welcome! Please choose an option:"
 MSG_NO_PROFILE = "📌 To help us find the perfect study buddy for you, please answer a few questions and create a profile. It won’t take long, but be honest and thoughtful with your responses – the matchmaking process will be based on your answers."
 MSG_BANNED = "You are banned from using this bot."
-MSG_TOKENS = "You have {tokens} tokens. Every day you are given 3 free tokens. One token is equal to one search at a time. If you want to get extra tokens, you can share your referral link to others. For each new user, you will be given one extra token."
+MSG_TOKENS = "You have {tokens} tokens. Every day you are given 5 free tokens. One token is equal to one search at a time. If you want to get extra tokens, you can share your referral link to others. For each new user, you will be given five extra tokens."
 MSG_NO_TOKENS = "You have no tokens. Please top up your tokens and try again."
 MSG_NO_MATCH = "No suitable match found. Please try again later."
 MSG_USER_INACTIVE = "Unfortunately, this user is no longer available for matchmaking."
@@ -148,7 +148,7 @@ async def process_profile_creation(state: FSMContext, user_data, user_id):
         "contact": contact,
         "is_active": 1,
         "referral_count": 0,
-        "token": 8,
+        "token": 20,
         "daily_referral": 0,
 
     }).execute()
@@ -161,7 +161,7 @@ async def process_profile_creation(state: FSMContext, user_data, user_id):
         if referrer_data:
             supabase.table("telegram").update({
                 "referral_count": referrer_data["referral_count"] + 1,
-                "token": referrer_data["token"] + 3
+                "token": referrer_data["token"] + 5
             }).eq("user_id", referrer_id).execute()
 
     await state.clear()
