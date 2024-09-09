@@ -99,14 +99,14 @@ async def handle_banned_user_callback(callback: types.CallbackQuery):
 async def format_profile(user_data):
     gender = "female" if not user_data["gender"] else "male"
     return (
-        f"Your Profile\n\n"
-        f"Name: {user_data['name']}\n"
-        f"Gender: {gender}\n"
-        f"Age: {user_data['age']}\n"
-        f"Location: {user_data['origin']}\n"
-        f"Interests: {', '.join(user_data['interests'])}\n"
-        f"Intro: {user_data['bio']}\n"
-        f"Contact: {user_data['contact']}\n"
+        f"👤<b>Your Profile</b>\n\n"
+        f"✏️<b>Name:</b> {user_data['name']}\n"
+        f"👥<b>Gender:</b> {gender}\n"
+        f"📆<b>Age:</b> {user_data['age']}\n"
+        f"📍<b>Location:</b> {user_data['origin']}\n"
+        f"🏓<b>Interests:</b> {', '.join(user_data['interests'])}\n"
+        f"📝<b>Intro:</b> {user_data['bio']}\n"
+        f"📨<b>Contact:</b> {user_data['contact']}\n"
     )
 
 # Helper function to create reply markup
@@ -639,7 +639,8 @@ async def create_edit_profile(message: types.Message, state: FSMContext):
             [InlineKeyboardButton(text="Edit", callback_data="edit")],
             [InlineKeyboardButton(text="Save and Return", callback_data="save")]
         ]
-    ))
+    ), parse_mode="HTML"
+    )
     await state.update_data(prev_message_id=msg.message_id)
 
 @edit_router.callback_query(F.data == "save")
