@@ -375,7 +375,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
         # Add 5 tokens daily
         timestamptz_str = user_data['last_search']
         if timestamptz_str is not None:
-            last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+            last_datetime = datetime.fromisoformat(timestamptz_str)
         else:
             # Handle the case when timestamptz_str is None
             # You can set a default value or return an error message
@@ -607,7 +607,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
 
     # Add 5 tokens daily
     timestamptz_str = user_data['last_search']
-    last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+    last_datetime = datetime.fromisoformat(timestamptz_str)
     difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
     if (difference.days > 0): user_data['token'] += 5    
 
