@@ -66,6 +66,7 @@ class Form(StatesGroup):
     match_info = State()
     referrer_id = State()
     reported_user_id = State()
+    broadcast_message = State()
 
 main_router = Router()
 profile_router = Router()
@@ -269,7 +270,7 @@ async def send_all_command(message: types.Message, state: FSMContext):
     else:
         await message.answer("You are not authorized to use this command.")
 
-@main_router.message(StateFilter("broadcast_message"))
+@main_router.message(F.text == "broadcast_message")
 async def send_broadcast(message: types.Message, state: FSMContext):
     global last_message_ids
     last_message_ids = {}  # Reset the dictionary for tracking
