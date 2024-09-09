@@ -232,8 +232,9 @@ async def find_best_match(request, user_data):
     # Update the database with the new history, last search time, and token count
     supabase.table("telegram").update({"history": formatted_history}).eq("user_id", user_data["user_id"]).execute()
     supabase.table("telegram").update({"token": user_data["token"]-1}).eq("user_id", user_data["user_id"]).execute()
-    supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone))}).eq("user_id", user_data["user_id"]).execute()
-
+    supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
+    # supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone))}).eq("user_id", user_data["user_id"]).execute()
+    
     # Return the best match
     print(result)
     print(filtered_results)
