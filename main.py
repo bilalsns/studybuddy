@@ -307,6 +307,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
     if not user_data:
         await state.set_state(Form.name)
         await message.answer(MSG_NO_PROFILE, reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+        await message.answer(f"📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
         return
 
     if user_data['token'] > 0:
@@ -631,6 +632,7 @@ async def create_edit_profile(message: types.Message, state: FSMContext):
     if not user_data:
         await state.set_state(Form.name)
         await message.answer(MSG_NO_PROFILE, reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+        await message.answer(f"📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
         return
 
     profile_text = await format_profile(user_data)
