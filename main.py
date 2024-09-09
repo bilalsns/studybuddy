@@ -270,6 +270,9 @@ async def send_all_command(message: types.Message, state: FSMContext):
     else:
         await message.answer("You are not authorized to use this command.")
 
+# A dictionary to store user message IDs for the last broadcast
+last_message_ids = {}  # e.g., {user_id: message_id}
+
 @main_router.message(F.text == "broadcast_message")
 async def send_broadcast(message: types.Message, state: FSMContext):
     global last_message_ids
@@ -282,11 +285,11 @@ async def send_broadcast(message: types.Message, state: FSMContext):
     for user in users:
         try:
             if message.text:
-                msg = await bot.send_message(user["user_id"], message.text)
+                msg = await bot.send_message(chat_id = user["user_id"], message.text)
             elif message.photo:
-                msg = await bot.send_photo(user["user_id"], message.photo[-1].file_id, caption=message.caption)
+                msg = await bot.send_photo(chat_id = user["user_id"], message.photo[-1].file_id, caption=message.caption)
             elif message.video:
-                msg = await bot.send_video(user["user_id"], message.video.file_id, caption=message.caption)
+                msg = await bot.send_video(chat_id = user["user_id"], message.video.file_id, caption=message.caption)
             # Store the message ID for deletion purposes
             last_message_ids[user["user_id"]] = msg.message_id
         except Exception as e:
@@ -295,9 +298,6 @@ async def send_broadcast(message: types.Message, state: FSMContext):
     await message.answer("Broadcast sent to all users.")
     await state.clear()  # Clear the state after the broadcast
 
-
-# A dictionary to store user message IDs for the last broadcast
-last_message_ids = {}  # e.g., {user_id: message_id}
 
 @main_router.message(Command("delete_last"))
 async def delete_last_message(message: types.Message):
