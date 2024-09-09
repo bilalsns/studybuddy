@@ -258,6 +258,65 @@ async def check_for_bad_words(message: types.Message, text_to_check: str) -> boo
         return True
     return False
 
+
+# send all func for admins
+@main_router.message(Command("send_all"))
+async def send_all_command(message: types.Message, state: FSMContext):
+    # Check if the user is the admin
+    if message.from_user.id == int(admin_id):
+        await message.answer("Please send the message (text, image, video, etc.) that you want to broadcast to all users.")
+        # Set a custom state for this admin action, like `Form.broadcast`
+        await state.set_state("broadcast_message")
+    else:
+        await message.answer("You are not authorized to use this command.")
+
+@main_router.message(StateFilter("broadcast_message"))
+async def send_broadcast(message: types.Message, state: FSMContext):
+    global last_message_ids
+    last_message_ids = {}  # Reset the dictionary for tracking
+
+    # Fetch all users from the database
+    users = supabase.table("telegram").select("user_id").execute().data
+    
+    # Send the message to all users and store the message IDs for later deletion
+    for user in users:
+        try:
+            if message.text:
+                msg = await bot.send_message(user["user_id"], message.text)
+            elif message.photo:
+                msg = await bot.send_photo(user["user_id"], message.photo[-1].file_id, caption=message.caption)
+            elif message.video:
+                msg = await bot.send_video(user["user_id"], message.video.file_id, caption=message.caption)
+            # Store the message ID for deletion purposes
+            last_message_ids[user["user_id"]] = msg.message_id
+        except Exception as e:
+            print(f"Failed to send message to {user['user_id']}: {e}")
+    
+    await message.answer("Broadcast sent to all users.")
+    await state.clear()  # Clear the state after the broadcast
+
+
+# A dictionary to store user message IDs for the last broadcast
+last_message_ids = {}  # e.g., {user_id: message_id}
+
+@main_router.message(Command("delete_last"))
+async def delete_last_message(message: types.Message):
+    if message.from_user.id == int(admin_id):  # Ensure only admin can use this command
+        if last_message_ids:
+            for user_id, message_id in last_message_ids.items():
+                try:
+                    await bot.delete_message(user_id, message_id)
+                except Exception as e:
+                    print(f"Failed to delete message for {user_id}: {e}")
+            last_message_ids.clear()  # Clear the list after deleting all messages
+            await message.answer("Last broadcasted message deleted for all users.")
+        else:
+            await message.answer("No broadcasted messages found to delete.")
+    else:
+        await message.answer("You are not authorized to use this command.")
+
+
+
 # Main commands
 @main_router.message(Command(COMMAND_START))
 async def cmd_start(message: types.Message, state: FSMContext):
