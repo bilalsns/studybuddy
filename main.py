@@ -233,7 +233,6 @@ async def find_best_match(request, user_data):
     supabase.table("telegram").update({"history": formatted_history}).eq("user_id", user_data["user_id"]).execute()
     supabase.table("telegram").update({"token": user_data["token"]-1}).eq("user_id", user_data["user_id"]).execute()
     supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
-    # supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone))}).eq("user_id", user_data["user_id"]).execute()
     
     # Return the best match
     print(result)
@@ -371,6 +370,13 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
 
     if user_data['token'] > 0:
         request = ' '.join(user_data["interests"])
+
+        # Add 5 tokens daily
+        timestamptz_str = user_data['last_search']
+        last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+        difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
+        if (difference.days > 0) user_data['token'] += 5
+
         found_user = await find_best_match(request, user_data)
 
         if found_user:
@@ -589,6 +595,13 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
         return
 
     request = ' '.join(user_data["interests"])
+
+    # Add 5 tokens daily
+    timestamptz_str = user_data['last_search']
+    last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+    difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
+    if (difference.days > 0) user_data['token'] += 5    
+
     found_user = await find_best_match(request, user_data)
 
     if found_user:
