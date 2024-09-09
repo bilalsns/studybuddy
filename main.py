@@ -376,7 +376,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
         timestamptz_str = user_data['last_search']
         last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-        if (difference.days > 0) user_data['token'] += 5
+        if (difference.days > 0): user_data['token'] += 5
 
         found_user = await find_best_match(request, user_data)
 
@@ -601,7 +601,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
     timestamptz_str = user_data['last_search']
     last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
     difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-    if (difference.days > 0) user_data['token'] += 5    
+    if (difference.days > 0): user_data['token'] += 5    
 
     found_user = await find_best_match(request, user_data)
 
