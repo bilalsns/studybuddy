@@ -374,7 +374,15 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
 
         # Add 5 tokens daily
         timestamptz_str = user_data['last_search']
-        last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+        if timestamptz_str is not None:
+            last_datetime = datetime.fromisoformat(timestamptz_str.replace("Z", "+00:00"))
+        else:
+            # Handle the case when timestamptz_str is None
+            # You can set a default value or return an error message
+            last_datetime = None  # or some default behavior
+            await message.answer("No valid timestamp found for this user.")
+            return  # Optionally return early if there's nothing to process
+        
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
         if (difference.days > 0): user_data['token'] += 5
 
