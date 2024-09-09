@@ -97,10 +97,11 @@ async def handle_banned_user_callback(callback: types.CallbackQuery):
 
 # Function to format the user's profile for display
 async def format_profile(user_data):
+    gender = "female" if not user_data["gender"] else "male"
     return (
         f"Your Profile\n\n"
         f"Name: {user_data['name']}\n"
-        f"Gender: {user_data['gender']}\n"
+        f"Gender: {gender}\n"
         f"Age: {user_data['age']}\n"
         f"Location: {user_data['origin']}\n"
         f"Interests: {', '.join(user_data['interests'])}\n"
