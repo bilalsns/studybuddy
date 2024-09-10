@@ -894,6 +894,7 @@ async def process_contact(message: types.Message, state: FSMContext):
         return
 
     logging.info("Processing contact")
+    contanct_info = f"(telegram username: @{message.from_user.username}) {message.text}"
     await state.update_data(contact=message.text)
 
     user_data = await fetch_user_data(message.from_user.id) or {}
