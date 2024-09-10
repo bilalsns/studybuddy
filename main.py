@@ -924,20 +924,21 @@ async def send_all_command(message: types.Message, state: FSMContext):
 async def send_broadcast(message: types.Message, state: FSMContext):
     # global last_message_ids
     # last_message_ids = {}  # Reset the dictionary for tracking
-
+    print("Yakhyo's message arrived")
     # Fetch all users from the database
     users = supabase.table("telegram").select("user_id").execute().data
-    
+    print(users)
     # Send the message to all users and store the message IDs for later deletion
     for user in users:
         try:
             user_id = user["user_id"]
+            print(user_id)
             if message.text:
-                msg = await bot.send_message(chat_id=user_id, text=message.text)
+                await bot.send_message(chat_id=user_id, text=message.text)
             elif message.photo:
-                msg = await bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
+                await bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
             elif message.video:
-                msg = await bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
+                await bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
             # Store the message ID for deletion purposes
             # last_message_ids[user["user_id"]] = msg.message_id
         except Exception as e:
