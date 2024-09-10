@@ -922,7 +922,7 @@ async def send_all_command(message: types.Message):
         users = supabase.table("telegram").select("user_id").eq("is_active", True).execute().data
         for user_id in users:
             try:
-                await message.bot.send_message(chat_id=user_id, text=broadcast_content)
+                await message.bot.send_message(chat_id=user_id["user_id"], text=broadcast_content)
             except Exception as e:
                 print(f"Failed to send message to {user_id}: {e}")
 
