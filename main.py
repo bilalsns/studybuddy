@@ -27,7 +27,7 @@ model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 # Bot configuration
 API_TOKEN = '7495888476:AAGymgKPkmjYXISWNGBMtsx1XD3JC8KP7XA'
 bot_username = 'up2matesbot'
-admin_id = "6193719398"
+admin_id = "1145841053"
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
@@ -906,46 +906,73 @@ async def process_contact(message: types.Message, state: FSMContext):
         parse_mode='Markdown'
     )
 
-# send all func for admins
+
 @main_router.message(Command("send_all"))
-async def send_all_command(message: types.Message, state: FSMContext):
+async def send_all_command(message: types.Message):
     # Check if the user is the admin
     if message.from_user.id == int(admin_id):
-        await message.answer("Please send the message (text, image, video, etc.) that you want to broadcast to all users.")
-        # Set a custom state for this admin action, like `Form.broadcast`
-        await state.set_state("broadcast_message")
+        # Get the message after the "/send_all " command
+        broadcast_content = message.text[len("/send_all "):].strip()
+
+        if not broadcast_content:
+            await message.answer("Please provide a message to broadcast after the /send_all command.")
+            return
+        
+        # Broadcast the message to all users in users    
+        users = supabase.table("telegram").select("user_id").eq("is_active", True).execute().data
+        for user_id in users:
+            try:
+                await message.bot.send_message(chat_id=user_id, text=broadcast_content)
+            except Exception as e:
+                print(f"Failed to send message to {user_id}: {e}")
+
+        # Notify the admin that the message has been broadcasted
+        await message.answer("The message has been broadcast to all users.")
     else:
         await message.answer("You are not authorized to use this command.")
+
+
+
+# send all func for admins
+# @main_router.message(Command("send_all"))
+# async def send_all_command(message: types.Message, state: FSMContext):
+#     # Check if the user is the admin
+#     if message.from_user.id == int(admin_id):
+#         await message.answer("Please send the message (text, image, video, etc.) that you want to broadcast to all users.")
+#         # Set a custom state for this admin action, like `Form.broadcast`
+#         await state.set_state("broadcast_message")
+#     else:
+#         await message.answer("You are not authorized to use this command.")
 
 # A dictionary to store user message IDs for the last broadcast
 # last_message_ids = {}  # e.g., {user_id: message_id}
 
-@main_router.message(Form.broadcast_message)
-async def send_broadcast(message: types.Message, state: FSMContext):
-    # global last_message_ids
-    # last_message_ids = {}  # Reset the dictionary for tracking
-    print("Yakhyo's message arrived")
-    # Fetch all users from the database
-    users = supabase.table("telegram").select("user_id").execute().data
-    print(users)
-    # Send the message to all users and store the message IDs for later deletion
-    for user in users:
-        try:
-            user_id = user["user_id"]
-            print(user_id)
-            if message.text:
-                await bot.send_message(chat_id=user_id, text=message.text)
-            elif message.photo:
-                await bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
-            elif message.video:
-                await bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
-            # Store the message ID for deletion purposes
-            # last_message_ids[user["user_id"]] = msg.message_id
-        except Exception as e:
-            print(f"Failed to send message to {user['user_id']}: {e}")
+# @main_router.message(Form.broadcast_message)
+# async def send_broadcast(message: types.Message, state: FSMContext):
+#     # global last_message_ids
+#     # last_message_ids = {}  # Reset the dictionary for tracking
+#     print("Yakhyo's message arrived")
+#     # Fetch all users from the database
+#     users = supabase.table("telegram").select("user_id").execute().data
+#     print(users)
+#     # Send the message to all users and store the message IDs for later deletion
+#     for user in users:
+#         try:
+#             user_id = user["user_id"]
+#             print(user_id)
+#             if message.text:
+#                 await bot.send_message(chat_id=user_id, text=message.text)
+#             elif message.photo:
+#                 await bot.send_photo(chat_id=user_id, photo=message.photo[-1].file_id, caption=message.caption)
+#             elif message.video:
+#                 await bot.send_video(chat_id=user_id, video=message.video.file_id, caption=message.caption)
+#             # Store the message ID for deletion purposes
+#             # last_message_ids[user["user_id"]] = msg.message_id
+#         except Exception as e:
+#             print(f"Failed to send message to {user['user_id']}: {e}")
     
-    await message.answer("Broadcast sent to all users.")
-    await state.clear()  # Clear the state after the broadcast
+#     await message.answer("Broadcast sent to all users.")
+#     await state.clear()  # Clear the state after the broadcast
 
 
 # @main_router.message(Command("delete_last"))
