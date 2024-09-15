@@ -285,6 +285,13 @@ async def get_tokens(message: types.Message):
 
     user_data = await fetch_user_data(message.from_user.id)
     if user_data:
+        timestamptz_str = user_data['last_search']
+        last_datetime = datetime.fromisoformat(timestamptz_str)
+        difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
+        if (difference.days > 0): 
+            user_data['token'] += 9
+            supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
+
         await message.answer(MSG_TOKENS.format(tokens=user_data["token"]),
                              reply_markup=InlineKeyboardMarkup(
                                  inline_keyboard=[[InlineKeyboardButton(text="Copy Referral Link", callback_data="copy referral link")]]
@@ -314,7 +321,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
     if user_data['token'] > 0:
         request = ' '.join(user_data["interests"])
 
-        # Add 5 tokens daily
+        # Add 9 tokens daily
         timestamptz_str = user_data['last_search']
         if timestamptz_str is not None:
             last_datetime = datetime.fromisoformat(timestamptz_str)
@@ -326,7 +333,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
             return  # Optionally return early if there's nothing to process
         
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-        if (difference.days > 0): user_data['token'] += 5
+        if (difference.days > 0): user_data['token'] += 9
 
         found_user = await find_best_match(request, user_data)
 
@@ -551,7 +558,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
     timestamptz_str = user_data['last_search']
     last_datetime = datetime.fromisoformat(timestamptz_str)
     difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-    if (difference.days > 0): user_data['token'] += 5    
+    if (difference.days > 0): user_data['token'] += 9
 
     found_user = await find_best_match(request, user_data)
 
