@@ -162,7 +162,7 @@ async def process_profile_creation(state: FSMContext, user_data, user_id):
         if referrer_data:
             supabase.table("telegram").update({
                 "referral_count": referrer_data["referral_count"] + 1,
-                "token": referrer_data["token"] + 5
+                "token": referrer_data["token"] + 9
             }).eq("user_id", referrer_id).execute()
 
     await state.clear()
@@ -268,9 +268,9 @@ async def cmd_start(message: types.Message, state: FSMContext):
     if await is_user_banned(message.from_user.id):  
         await handle_banned_user(message)
         return
-
-    referrer_id = message.from_user.id
-    await state.update_data(referrer_id=referrer_id)
+        
+    referrer_id = str(message.text[7:])
+    await state.update_data(referrer_id = referrer_id)
 
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
