@@ -787,7 +787,7 @@ async def process_edit_contact(message: types.Message, state: FSMContext):
     if await ignore_old_messages(message):
         return
 
-    contanct_info = f"(telegram username: @{message.from_user.username}) {message.text}"
+    contact_info = f"(telegram username: @{message.from_user.username}) {message.text}"
     await state.update_data(contact=contact_info)
 
     user_id = message.from_user.id
@@ -904,7 +904,7 @@ async def process_contact(message: types.Message, state: FSMContext):
         return
 
     logging.info("Processing contact")
-    contanct_info = f"(telegram username: @{message.from_user.username}) {message.text}"
+    contact_info = f"(telegram username: @{message.from_user.username}) {message.text}"
     await state.update_data(contact=contact_info)
 
     user_data = await fetch_user_data(message.from_user.id) or {}
