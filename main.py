@@ -290,8 +290,8 @@ async def get_tokens(message: types.Message):
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
         if (difference.days > 0): 
             user_data['token'] += 9
-            supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
-        supabase.table("telegram").update({"token": user_data["token"]-1}).eq("user_id", user_data["user_id"]).execute()
+        supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
+        supabase.table("telegram").update({"token": user_data["token"]}).eq("user_id", user_data["user_id"]).execute()
 
         await message.answer(MSG_TOKENS.format(tokens=user_data["token"]),
                              reply_markup=InlineKeyboardMarkup(
