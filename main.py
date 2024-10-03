@@ -43,7 +43,7 @@ TEXT_EDIT_PROFILE = 'Create/Edit Profile'
 MSG_WELCOME = "Welcome! Please choose an option:"
 MSG_NO_PROFILE = "📌 To help us find the perfect study buddy for you, please answer a few questions and create a profile. It won’t take long, but be honest and thoughtful with your responses – the matchmaking process will be based on your answers."
 MSG_BANNED = "You are banned from using this bot."
-MSG_TOKENS = "You have {tokens} tokens. Every day you are given 5 free tokens. One token is equal to one search at a time. If you want to get extra tokens, you can share your referral link to others. For each new user, you will be given five extra tokens."
+MSG_TOKENS = "You have {tokens} tokens. Every day you are given 15 free tokens. One token is equal to one search at a time. If you want to get extra tokens, you can share your referral link to others. For each new user, you will be given five extra tokens."
 MSG_NO_TOKENS = "You have no tokens. Please top up your tokens and try again."
 MSG_NO_MATCH = "No suitable match found. Please try again later."
 MSG_USER_INACTIVE = "Unfortunately, this user is no longer available for matchmaking."
@@ -289,7 +289,7 @@ async def get_tokens(message: types.Message):
         last_datetime = datetime.fromisoformat(timestamptz_str)
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
         if (difference.days > 0): 
-            user_data['token'] += 9
+            user_data['token'] += 15
         supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
         supabase.table("telegram").update({"token": user_data["token"]}).eq("user_id", user_data["user_id"]).execute()
 
@@ -335,7 +335,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
         
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
         if (difference.days > 0): 
-            user_data['token'] += 9
+            user_data['token'] += 15
 
         found_user = await find_best_match(request, user_data)
 
@@ -561,7 +561,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
     last_datetime = datetime.fromisoformat(timestamptz_str)
     difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
     if (difference.days > 0): 
-        user_data['token'] += 9
+        user_data['token'] += 15
 
     found_user = await find_best_match(request, user_data)
 
