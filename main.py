@@ -406,7 +406,7 @@ async def match_profiles(callback_query: types.CallbackQuery, state: FSMContext)
                 inline_keyboard=[
                     [
                         InlineKeyboardButton(text="Accept ✅", callback_data=f'accept {current_user_data["user_id"]}'),
-                        InlineKeyboardButton(text="Reject ❌", callback_data='reject'),
+                        InlineKeyboardButton(text="Reject ❌", callback_data=f'reject {current_user_data["user_id"]}'),
                         InlineKeyboardButton(text="Report", callback_data=f'report {current_user_data["user_id"]}'),
                     ]
                 ]
@@ -651,6 +651,49 @@ async def accept(callback_query: types.CallbackQuery):
         ),
         parse_mode="HTML",
     )
+
+@main_router.callback_query(lambda c: 'reject' in c.data)
+async def reject(callback_query: types.CallbackQuery):
+    await callback_query.message.delete()
+    if await is_user_banned(callback_query.from_user.id):
+        await handle_banned_user_callback(callback_query)
+        return
+
+    match_user_id = callback_query.data.split()[1]
+    match_user_data = await fetch_user_data(match_user_id)
+    current_user_data = await fetch_user_data(callback_query.from_user.id)
+
+    if not match_user_data or not current_user_data:
+        await callback_query.message.answer(MSG_USER_INACTIVE)
+        return
+
+    gender = "female" if not current_user_data["gender"] else "male"
+    
+    # Fetch user info using get_chat
+    match_user_info = await bot.get_chat(match_user_id)
+    current_user_info = await bot.get_chat(match_user_id)
+    # Check if username is available
+    match_username = match_user_info.username or "Username not set"
+    current_username = current_user_info.username or "Username not set"
+    
+    await bot.send_message(
+        chat_id=match_user_id,
+        text=(
+            f"Unfortunately, your request for matching was declined 😔. \n\n"
+            f"People come and go. It really doesn't matter; what really matters is how you learn from the experience. And remember, blocking the bot doesn't help.\n\n"
+            f"<b>Fortunately, you still can find the right person using our bot 🥳.</b>\n\n"
+            f"PS: To get more matches, you can improve your profile."
+        ),
+        parse_mode="HTML",
+    )
+    await bot.send_message(
+        chat_id=callback_query.from_user.id,
+        text=(
+            f"<b>We appreciate your desicion.</b>"
+        ),
+        parse_mode="HTML",
+    )
+
 
 @main_router.message(F.text == TEXT_EDIT_PROFILE)
 async def create_edit_profile(message: types.Message, state: FSMContext):
