@@ -349,7 +349,8 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
                     f"🤩 <b><i>Meet Your Future Study Mate!</i></b>🚀\n\n"
                     f"<b><i>👤Gender:</i></b> {gender}\n"
                     f"<b><i>📆Age:</i></b> {found_user['age']}\n"
-                    f"<b><i>📍Location:</i></b> {found_user['origin']}\n\n"
+                    f"<b><i>📍Location:</i></b> {found_user['origin']}\n"
+                    f"<b><i>🏓Interests:</i></b> {', '.join(found_user['interests'])}\n\n"
                     f"<b><i>👋Brief Introduction (e.g.: test scores🧮, major achievements🏆, hobbies🏓, etc.):</i></b> {found_user['bio']}"
                 ),
                 parse_mode="HTML",
@@ -399,6 +400,7 @@ async def match_profiles(callback_query: types.CallbackQuery, state: FSMContext)
                 f"<b><i>👤Gender:</i></b> {gender}\n"
                 f"<b><i>📆Age:</i></b> {current_user_data['age']}\n"
                 f"<b><i>📍Location:</i></b> {current_user_data['origin']}\n\n"
+                f"<b><i>🏓Interests:</i></b> {', '.join(current_user_data['interests'])}\n\n"
                 f"<b><i>👋Brief Introduction (e.g.: test scores🧮, major achievements🏆, hobbies🏓, etc.):</i></b> {current_user_data['bio']}"
             ),
             parse_mode="HTML",
