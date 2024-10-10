@@ -258,6 +258,12 @@ async def check_for_bad_words(message: types.Message, text_to_check: str) -> boo
         return True
     return False
 
+# character length checker
+async def check_for_char_length(message: types.Message, text_to_check: str) -> bool:
+    if len(text_to_check) < 100:
+        await message.answer("Please write a bit more about yourself. Try again.")
+        return True
+    return False
 
 # Main commands
 @main_router.message(Command(COMMAND_START))
@@ -578,6 +584,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
                 f"<b><i>👤Gender:</i></b> {gender}\n"
                 f"<b><i>📆Age:</i></b> {found_user['age']}\n"
                 f"<b><i>📍Location:</i></b> {found_user['origin']}\n\n"
+                f"<b><i>🏓Interests:</i></b> {', '.join(found_user['interests'])}\n\n"
                 f"<b><i>👋Brief Introduction (e.g.: test scores🧮, major achievements🏆, hobbies🏓, etc.):</i></b> {found_user['bio']}"
             ),
             parse_mode="HTML",
@@ -797,7 +804,8 @@ async def process_edit_interests(message: types.Message, state: FSMContext):
     interests_text = message.text
     if await check_for_bad_words(message, interests_text):
         return
-
+    if await check_for_char_length(message, intro):
+        return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
         await message.answer("📋 <b>Please list five to ten interests, separated by commas.</b>", parse_mode='HTML')
@@ -818,7 +826,8 @@ async def process_edit_intro(message: types.Message, state: FSMContext):
     intro = message.text
     if await check_for_bad_words(message, intro):
         return
-
+    if await check_for_char_length(message, intro):
+        return
     await state.update_data(intro=intro)
 
     user_id = message.from_user.id
@@ -913,7 +922,8 @@ async def process_interests(message: types.Message, state: FSMContext):
     interests_text = message.text
     if await check_for_bad_words(message, interests_text):
         return
-
+    if await check_for_char_length(message, intro):
+        return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
         await message.answer("⚠️ <i>Please, list five to ten interests, separated by commas.</i>", parse_mode='HTML')
@@ -935,7 +945,8 @@ async def process_intro(message: types.Message, state: FSMContext):
     intro = message.text
     if await check_for_bad_words(message, intro):
         return
-
+    if await check_for_char_length(message, intro):
+        return
     await state.update_data(intro=intro)
     await state.set_state(Form.contact)
     await message.answer(
