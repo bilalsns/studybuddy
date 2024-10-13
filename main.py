@@ -1005,8 +1005,6 @@ async def process_edit_interests(message: types.Message, state: FSMContext):
     interests_text = message.text
     if await check_for_bad_words(message, interests_text):
         return
-    if await check_for_char_length(message, intro):
-        return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
         await message.answer("📋 <b>Please list five to ten interests, separated by commas.</b>", parse_mode='HTML')
@@ -1122,8 +1120,6 @@ async def process_interests(message: types.Message, state: FSMContext):
     
     interests_text = message.text
     if await check_for_bad_words(message, interests_text):
-        return
-    if await check_for_char_length(message, intro):
         return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
