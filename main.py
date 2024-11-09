@@ -330,6 +330,11 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
+@main_router.message(F.text == 'Menu', state='*')
+async def process_menu_button(message: types.Message, state: FSMContext):
+    await state.clear()
+    await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
+
 @main_router.message(F.text == TEXT_MY_TOKENS)
 async def get_tokens(message: types.Message):
     if await ignore_old_messages(message):
@@ -387,6 +392,13 @@ async def looking_for_teachers(message: types.Message, state: FSMContext):
             resize_keyboard=True,
         )
     )
+    
+@main_router.callback_query(lambda c: 'menu' in c.data)
+async def menu(callback_query: types.CallbackQuery):
+    if await is_user_banned(callback_query.from_user.id):
+        await handle_banned_user_callback(callback_query)
+        return
+    await callback_query.message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
 @main_router.message(Form.student_search_field)
 async def process_student_search_field(message: types.Message, state: FSMContext):
