@@ -1246,7 +1246,6 @@ async def process_teacher_resume(message: types.Message, state: FSMContext):
 
     # Create the teacher application data (exclude 'id' to avoid conflicts)
     teacher_application = {
-        'name': data.get('name', 'N/A'),
         'subjects': data['teacher_subjects'],
         'experience': data['teacher_experience'],
         'price': data['teacher_price'],
