@@ -375,9 +375,14 @@ async def looking_for_teachers(message: types.Message, state: FSMContext):
         "Please choose a field of interest:",
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
-                [KeyboardButton(text="Tests (IELTS, APs, SAT, A-Levels, etc.)")],
-                [KeyboardButton(text="Academics (Math, Biology, English, etc.)")],
-                [KeyboardButton(text="College Admissions")],
+                [
+                    KeyboardButton(text="Tests (IELTS, APs, SAT, A-Levels, etc.)"),
+                    KeyboardButton(text="Academics (Math, Biology, English, etc.)")
+                ],
+                [
+                    KeyboardButton(text="College Admissions"),
+                    KeyboardButton(text="Menu")
+                ],
             ],
             resize_keyboard=True,
         )
@@ -1232,17 +1237,15 @@ async def process_teacher_price(message: types.Message, state: FSMContext):
 async def process_teacher_availability(message: types.Message, state: FSMContext):
     await state.update_data(teacher_availability=message.text)
     await state.set_state(Form.teacher_resume)
-    await message.answer("Please upload your resume or provide a link to it.")
+    await message.answer("Please provide a link to your resume.")
 
 @main_router.message(Form.teacher_resume)
 async def process_teacher_resume(message: types.Message, state: FSMContext):
     await state.update_data(teacher_resume=message.text)
-    # Now, save the teacher application and notify admin for verification
     data = await state.get_data()
 
-    # Create the teacher application data
+    # Create the teacher application data (exclude 'id' to avoid conflicts)
     teacher_application = {
-        'user_id': message.from_user.id,
         'name': data.get('name', 'N/A'),
         'subjects': data['teacher_subjects'],
         'experience': data['teacher_experience'],
@@ -1252,11 +1255,20 @@ async def process_teacher_resume(message: types.Message, state: FSMContext):
         'verified': False  # Initially not verified
     }
 
-    # Save the application to the 'telegram' table in Supabase
-    supabase.table("telegram").insert(teacher_application).execute()
-    contact = supabase.table("telegram").select("contact", count="exact").eq('user_id', message.from_user.id).execute().data
+    # Check if the user already exists in the 'telegram' table
+    existing_user = supabase.table("telegram").select("*").eq('user_id', message.from_user.id).execute().data
 
-    
+    if existing_user:
+        # Update the existing user record with teacher application info
+        supabase.table("telegram").update(teacher_application).eq('user_id', message.from_user.id).execute()
+    else:
+        # If the user doesn't exist, insert a new record (include 'user_id')
+        teacher_application['user_id'] = message.from_user.id
+        supabase.table("telegram").insert(teacher_application).execute()
+
+    # Fetch the updated contact information
+    contact = supabase.table("telegram").select("contact").eq('user_id', message.from_user.id).execute().data
+
     # Notify the admin for verification
     admin_message = (
         f"📋 <b>New Teacher Application</b>\n\n"
@@ -1267,7 +1279,7 @@ async def process_teacher_resume(message: types.Message, state: FSMContext):
         f"💰 <b>Price per hour:</b> {teacher_application['price']}\n"
         f"🕒 <b>Availability:</b> {teacher_application['availability']}\n"
         f"📄 <b>Resume:</b> {teacher_application['resume']}\n"
-        f"📞 <b>Contact:</b> {teacher_application['contact']}\n"
+        f"📞 <b>Contact:</b> {contact[0]['contact'] if contact else 'N/A'}\n"
     )
 
     await bot.send_message(
@@ -1286,6 +1298,7 @@ async def process_teacher_resume(message: types.Message, state: FSMContext):
 
     await message.answer("Your application has been submitted. We will review it and get back to you soon.")
     await state.clear()
+
 
 # Admin handlers to approve or reject teacher applications
 @main_router.callback_query(lambda c: c.data.startswith("approve_teacher"))
