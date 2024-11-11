@@ -330,7 +330,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
-@main_router.message(F.text == 'Menu', state='*')
+@main_router.message(F.text == 'Menu')
 async def process_menu_button(message: types.Message, state: FSMContext):
     await state.clear()
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
