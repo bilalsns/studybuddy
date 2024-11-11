@@ -294,27 +294,27 @@ async def find_best_match(request, user_data):
 
 async def find_best_tutor_match(request, user_data):
     # Fetch verified tutors from the database
-    tutors = supabase.table("telegram").select("*").eq("verified", True).execute().data
+    tutors = supabase.table("telegram").select("*", count="exact").eq("verified", True).order('id').execute().data
     
     # Ensure we have tutors to match with
     if not tutors:
         return None
 
-    # Prepare data for encoding
-    tutor_subjects = [", ".join(tutor['subjects']) for tutor in tutors]
-    
+    # Prepare parameters for model encoding
+    param = [" ".join(tutor.get('subjects', [])) for tutor in tutors]
+
     # Encode the student's request and tutors' subjects
     query_embedding = model.encode(request)
-    tutor_embeddings = model.encode(tutor_subjects)
-    
-    # Compute similarity scores
-    similarities = cosine_similarity([query_embedding], tutor_embeddings)[0]
-    
-    # Pair tutors with their similarity scores
-    tutor_scores = list(zip(similarities, tutors))
+    passage_embeddings = model.encode(param)
+
+    # Compute similarity results using model.similarity
+    similarities = model.similarity(query_embedding, passage_embeddings)[0]
+
+    # Pair tutors with their similarity scores and their index in the tutors list
+    tutor_scores = [(score, idx) for idx, score in enumerate(similarities)]
     
     # Sort tutors by similarity score in descending order
-    tutor_scores.sort(key=lambda x: x[0], reverse=True)
+    tutor_scores.sort(reverse=True)
     
     # Exclude tutors the student has already viewed
     filtered_tutors = [
