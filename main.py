@@ -291,6 +291,46 @@ async def find_best_match(request, user_data):
     print(match[int(filtered_results[0]) - 1])
     return match[int(filtered_results[0]) - 1]
 
+
+async def find_best_tutor_match(request, user_data):
+    # Fetch verified tutors from the database
+    tutors = supabase.table("telegram").select("*").eq("verified", True).execute().data
+    
+    # Ensure we have tutors to match with
+    if not tutors:
+        return None
+
+    # Prepare data for encoding
+    tutor_subjects = [", ".join(tutor['subjects']) for tutor in tutors]
+    
+    # Encode the student's request and tutors' subjects
+    query_embedding = model.encode(request)
+    tutor_embeddings = model.encode(tutor_subjects)
+    
+    # Compute similarity scores
+    similarities = cosine_similarity([query_embedding], tutor_embeddings)[0]
+    
+    # Pair tutors with their similarity scores
+    tutor_scores = list(zip(similarities, tutors))
+    
+    # Sort tutors by similarity score in descending order
+    tutor_scores.sort(key=lambda x: x[0], reverse=True)
+    
+    # Exclude tutors the student has already viewed
+    filtered_tutors = [
+        (score, tutor) for score, tutor in tutor_scores
+        if tutor['user_id'] not tutor.get('is_banned', False)
+    ]
+    
+    # Handle case where no new tutors are found
+    if not filtered_tutors:
+        return None
+    
+    # Select the best matching tutor
+    best_tutor = filtered_tutors[0][1]
+
+    return best_tutor
+
 # Ignore old messages
 bot_startup_time = current_time
 async def ignore_old_messages(message: types.Message):
@@ -377,20 +417,8 @@ async def looking_for_teachers(message: types.Message, state: FSMContext):
     # Ask the student to choose a particular field of interest
     await state.set_state(Form.student_search_field)
     await message.answer(
-        "Please choose a field of interest:",
-        reply_markup=ReplyKeyboardMarkup(
-            keyboard=[
-                [
-                    KeyboardButton(text="Tests (IELTS, APs, SAT, A-Levels, etc.)"),
-                    KeyboardButton(text="Academics (Math, Biology, English, etc.)")
-                ],
-                [
-                    KeyboardButton(text="College Admissions"),
-                    KeyboardButton(text="Menu")
-                ],
-            ],
-            resize_keyboard=True,
-        )
+        f"Write down up to five academic intersts that you want to learn from your tutor.\n"
+        f"Example: College Application, Writing Essays, AP Calculus BC, Chemistry, Rocket Science."
     )
     
 @main_router.callback_query(lambda c: 'menu' in c.data)
@@ -405,15 +433,75 @@ async def process_student_search_field(message: types.Message, state: FSMContext
     field_of_interest = message.text
     await state.update_data(field_of_interest=field_of_interest)
     
-    teachers = fetch_teachers(field_of_interest)
-    if not teachers:
-        await message.answer("No teachers found matching your criteria.")
+    user_data = await fetch_user_data(message.from_user.id)
+    if not user_data:
+        await message.answer("Please create a profile first.")
+        return
+    
+    # Find the best matching tutor
+    best_tutor = await find_best_tutor_match(field_of_interest, user_data)
+    
+    if not best_tutor:
+        await message.answer("No tutors found matching your criteria.")
         await state.clear()
         return
 
-    await state.update_data(teachers=teachers, current_teacher_index=0)
+    # Save the tutor data in state
+    await state.update_data(selected_tutor=best_tutor)
+    
+    # Format and display the tutor's profile
+    tutor_profile = format_teacher_profile(best_tutor)
+    await message.answer(
+        tutor_profile,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Choose this tutor", callback_data="choose_tutor"),
+                    InlineKeyboardButton(text="Next", callback_data="next_tutor")
+                ]
+            ]
+        ),
+        parse_mode='HTML'
+    )
     await state.set_state(Form.student_show_teacher)
-    await show_teacher(message, state)
+
+@main_router.callback_query(Form.student_show_teacher, lambda c: c.data == "next_tutor")
+async def next_tutor(callback_query: types.CallbackQuery, state: FSMContext):
+    await callback_query.answer()
+    
+    # Retrieve the user's data
+    user_data = await fetch_user_data(callback_query.from_user.id)
+    
+    # Get the last field of interest
+    data = await state.get_data()
+    field_of_interest = data.get('field_of_interest')
+    
+    # Find the next best tutor
+    next_tutor = await find_best_tutor_match(field_of_interest, user_data)
+    
+    if not next_tutor:
+        await callback_query.message.answer("No more tutors found.")
+        await state.clear()
+        return
+    
+    # Update the state with the new tutor
+    await state.update_data(selected_tutor=next_tutor)
+    
+    # Display the tutor's profile
+    tutor_profile = format_teacher_profile(next_tutor)
+    await callback_query.message.answer(
+        tutor_profile,
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(text="Choose this tutor", callback_data="choose_tutor"),
+                    InlineKeyboardButton(text="Next", callback_data="next_tutor")
+                ]
+            ]
+        ),
+        parse_mode='HTML'
+    )
+
 
 @main_router.message(Form.student_show_teacher)
 async def handle_unexpected_message(message: types.Message, state: FSMContext):
