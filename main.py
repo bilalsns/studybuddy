@@ -319,7 +319,7 @@ async def find_best_tutor_match(request, user_data):
     # Exclude tutors the student has already viewed
     filtered_tutors = [
         (score, tutor) for score, tutor in tutor_scores
-        if tutor['user_id'] not tutor.get('is_banned', False)
+        if tutor['user_id'] not in history and not tutor.get('is_banned', False)
     ]
     
     # Handle case where no new tutors are found
