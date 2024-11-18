@@ -307,14 +307,17 @@ async def find_best_tutor_match(request, user_data):
     query_embedding = model.encode(request)
     passage_embeddings = model.encode(param)
 
-    # Compute similarity results using model.similarity
+    # Compute similarity results
     similarities = model.similarity(query_embedding, passage_embeddings)[0]
 
-    # Pair tutors with their similarity scores and their index in the tutors list
-    tutor_scores = [(score, idx) for idx, score in enumerate(similarities)]
+    # Pair each similarity score with the corresponding tutor
+    tutor_scores = [(score, tutor) for score, tutor in zip(similarities, tutors)]
     
     # Sort tutors by similarity score in descending order
     tutor_scores.sort(reverse=True)
+    
+    # Get user's history
+    history = user_data.get('history', [])
     
     # Exclude tutors the student has already viewed
     filtered_tutors = [
@@ -330,6 +333,7 @@ async def find_best_tutor_match(request, user_data):
     best_tutor = filtered_tutors[0][1]
 
     return best_tutor
+
 
 # Ignore old messages
 bot_startup_time = current_time
