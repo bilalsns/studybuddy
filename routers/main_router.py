@@ -1,6 +1,7 @@
 # routers/main_router.py
 from aiogram import Router, types
-from aiogram.filters import Command, Text
+from aiogram.filters.command import Command
+from aiogram.filters.text import Text
 from config import MSG_WELCOME, TEXT_MY_TOKENS, TEXT_SEARCH_BUDDY, TEXT_LOOKING_FOR_TEACHERS, TEXT_BECOME_TEACHER
 from utils import create_main_menu, ignore_old_messages
 from db import fetch_user_data
