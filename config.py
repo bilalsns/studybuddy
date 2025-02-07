@@ -29,4 +29,7 @@ TEXT_EDIT_PROFILE = 'Create/Edit Profile'
 MSG_WELCOME = "Welcome! Please choose an option:"
 MSG_NO_PROFILE = "📌 To help us find the perfect study buddy for you, please answer a few questions and create a profile. It won’t take long, but be honest and thoughtful with your responses – the matchmaking process will be based on your answers."
 MSG_BANNED = "You are banned from using this bot."
+TEXT_LOOKING_FOR_TEACHERS = 'Looking for Teachers'
+TEXT_BECOME_TEACHER = 'Become a Teacher'
+
 # … etc.
