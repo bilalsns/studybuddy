@@ -16,7 +16,7 @@ async def cmd_start(message: types.Message, state):
     # (You can add banned-user check and referral logic here)
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
-@router.message(F.text == "Menu"))
+@router.message(F.text == "Menu")
 async def process_menu_button(message: types.Message, state):
     await state.clear()
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
