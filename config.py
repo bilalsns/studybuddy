@@ -12,7 +12,7 @@ BOT_STARTUP_TIME = datetime.now(ZoneInfo(SERVER_TIMEZONE))
 
 # Supabase configuration
 SUPABASE_URL = "https://pghlbddjvcllgcqpvvxl.supabase.co"
-SUPABASE_KEY = "YOUR_SUPABASE_KEY"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGxiZGRqdmNsbGdjcXB2dnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MTU1MTEsImV4cCI6MjAzNTM5MTUxMX0.TyymllzljjCQsd7kUUGQ_zPgC_GLnkeV64KujZRyrQU"
 
 # Bot configuration
 API_TOKEN = "7495888476:AAGymgKPkmjYXISWNGBMtsx1XD3JC8KP7XA"
