@@ -47,8 +47,7 @@ MSG_TOKENS = "You have {tokens} tokens. Every day you are given 15 free tokens. 
 MSG_NO_TOKENS = "You have no tokens. Please top up your tokens and try again."
 MSG_NO_MATCH = "No suitable match found. Please try again later."
 MSG_USER_INACTIVE = "Unfortunately, this user is no longer available for matchmaking."
-TEXT_LOOKING_FOR_TEACHERS = 'Looking for Teachers'
-TEXT_BECOME_TEACHER = 'Become a Teacher'
+
 
 # Define states for the finite state machine
 class Form(StatesGroup):
@@ -70,17 +69,7 @@ class Form(StatesGroup):
     reported_user_id = State()
     broadcast_message = State()
     
-    # For teacher application (removed name, age, location states)
-    teacher_subjects = State()
-    teacher_experience = State()
-    teacher_price = State()
-    teacher_availability = State()
-    teacher_resume = State()
-    
-    # For student searching for teachers
-    student_search_field = State()
-    student_show_teacher = State()
-    student_select_time_topic = State()
+   
 
 
 main_router = Router()
@@ -126,34 +115,6 @@ async def format_profile(user_data):
     )
 
 
-async def show_teacher(message, state):
-    data = await state.get_data()
-    teachers = data.get('teachers')
-    current_teacher_index = data.get('current_teacher_index', 0)
-
-    if current_teacher_index >= len(teachers):
-        await message.answer("No more teachers found.")
-        await state.clear()
-        return
-
-    teacher = teachers[current_teacher_index]
-
-    # Format teacher profile for display
-    teacher_profile = format_teacher_profile(teacher)
-
-    # Send the teacher profile to the student
-    await message.answer(
-        teacher_profile,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Choose this teacher", callback_data="choose_teacher"),
-                    InlineKeyboardButton(text="Next", callback_data="next_teacher")
-                ]
-            ]
-        ),
-        parse_mode='HTML'
-    )
 
 
 # Helper function to create reply markup
@@ -164,11 +125,8 @@ def create_main_menu():
                 KeyboardButton(text=TEXT_SEARCH_BUDDY),
                 KeyboardButton(text=TEXT_EDIT_PROFILE),
                 KeyboardButton(text=TEXT_MY_TOKENS)
-            ],
-            [
-                KeyboardButton(text=TEXT_LOOKING_FOR_TEACHERS),
-                KeyboardButton(text=TEXT_BECOME_TEACHER)
             ]
+           
         ],
         resize_keyboard=True,
     )
@@ -292,49 +250,6 @@ async def find_best_match(request, user_data):
     return match[int(filtered_results[0]) - 1]
 
 
-async def find_best_tutor_match(request, user_data):
-    # Fetch verified tutors from the database
-    tutors = supabase.table("telegram").select("*", count="exact").eq("verified", True).order('id').execute().data
-    
-    # Ensure we have tutors to match with
-    if not tutors:
-        return None
-
-    # Prepare parameters for model encoding
-    param = [" ".join(tutor.get('subjects', [])) for tutor in tutors]
-
-    # Encode the student's request and tutors' subjects
-    query_embedding = model.encode(request)
-    passage_embeddings = model.encode(param)
-
-    # Compute similarity results
-    similarities = model.similarity(query_embedding, passage_embeddings)[0]
-
-    # Pair each similarity score with the corresponding tutor
-    tutor_scores = [(score, tutor) for score, tutor in zip(similarities, tutors)]
-    
-    # Sort tutors by similarity score in descending order
-    tutor_scores.sort(reverse=True)
-    
-    # Get user's history
-    history = user_data.get('history', [])
-    
-    # Exclude tutors the student has already viewed
-    filtered_tutors = [
-        (score, tutor) for score, tutor in tutor_scores
-        if tutor['user_id'] not in history and not tutor.get('is_banned', False)
-    ]
-    
-    # Handle case where no new tutors are found
-    if not filtered_tutors:
-        return None
-    
-    # Select the best matching tutor
-    best_tutor = filtered_tutors[0][1]
-
-    return best_tutor
-
-
 # Ignore old messages
 bot_startup_time = current_time
 async def ignore_old_messages(message: types.Message):
@@ -408,23 +323,7 @@ async def copy_referral_link(callback_query: types.CallbackQuery):
     referral_link = f"https://t.me/{bot_username}?start={callback_query.from_user.id}"
     await callback_query.message.answer(f"Here is your referral link:\n{referral_link}\n\nShare this link with others to refer them to the bot.")
 
-# Handler for students looking for teachers
-@main_router.message(F.text == TEXT_LOOKING_FOR_TEACHERS)
-async def looking_for_teachers(message: types.Message, state: FSMContext):
-    if await ignore_old_messages(message):
-        return
 
-    if await is_user_banned(message.from_user.id):
-        await handle_banned_user(message)
-        return
-
-    # Ask the student to choose a particular field of interest
-    await state.set_state(Form.student_search_field)
-    await message.answer(
-        f"Write down up to five academic intersts that you want to learn from your tutor.\n"
-        f"Example: College Application, Writing Essays, AP Calculus BC, Chemistry, Rocket Science."
-    )
-    
 @main_router.callback_query(lambda c: 'menu' in c.data)
 async def menu(callback_query: types.CallbackQuery):
     if await is_user_banned(callback_query.from_user.id):
@@ -442,178 +341,7 @@ async def process_student_search_field(message: types.Message, state: FSMContext
         await message.answer("Please create a profile first.")
         return
     
-    # Find the best matching tutor
-    best_tutor = await find_best_tutor_match(field_of_interest, user_data)
-    
-    if not best_tutor:
-        await message.answer("No tutors found matching your criteria.")
-        await state.clear()
-        return
 
-    # Save the tutor data in state
-    await state.update_data(selected_tutor=best_tutor)
-    
-    # Format and display the tutor's profile
-    tutor_profile = format_teacher_profile(best_tutor)
-    await message.answer(
-        tutor_profile,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Choose this tutor", callback_data="choose_tutor"),
-                    InlineKeyboardButton(text="Next", callback_data="next_tutor")
-                ]
-            ]
-        ),
-        parse_mode='HTML'
-    )
-    await state.set_state(Form.student_show_teacher)
-
-@main_router.callback_query(Form.student_show_teacher, lambda c: c.data == "next_tutor")
-async def next_tutor(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.answer()
-    
-    # Retrieve the user's data
-    user_data = await fetch_user_data(callback_query.from_user.id)
-    
-    # Get the last field of interest
-    data = await state.get_data()
-    field_of_interest = data.get('field_of_interest')
-    
-    # Find the next best tutor
-    next_tutor = await find_best_tutor_match(field_of_interest, user_data)
-    
-    if not next_tutor:
-        await callback_query.message.answer("No more tutors found.")
-        await state.clear()
-        return
-    
-    # Update the state with the new tutor
-    await state.update_data(selected_tutor=next_tutor)
-    
-    # Display the tutor's profile
-    tutor_profile = format_teacher_profile(next_tutor)
-    await callback_query.message.answer(
-        tutor_profile,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Choose this tutor", callback_data="choose_tutor"),
-                    InlineKeyboardButton(text="Next", callback_data="next_tutor")
-                ]
-            ]
-        ),
-        parse_mode='HTML'
-    )
-
-
-@main_router.message(Form.student_show_teacher)
-async def handle_unexpected_message(message: types.Message, state: FSMContext):
-    # Inform the user that they should use the provided buttons
-    await message.answer("Please use the buttons provided to navigate through the teachers.")
-
-@main_router.callback_query(Form.student_show_teacher, lambda c: c.data == "choose_teacher")
-async def choose_teacher(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.answer()
-    data = await state.get_data()
-    current_teacher_index = data.get('current_teacher_index', 0)
-    teachers = data.get('teachers')
-    teacher = teachers[current_teacher_index]
-
-    # Save the selected teacher
-    await state.update_data(selected_teacher=teacher)
-    await state.set_state(Form.student_select_time_topic)
-    await callback_query.message.answer("Please enter the time and topic you would like to study with this teacher.")
-
-@main_router.callback_query(Form.student_show_teacher, lambda c: c.data == "next_teacher")
-async def next_teacher(callback_query: types.CallbackQuery, state: FSMContext):
-    await callback_query.answer()
-
-    # Update the current teacher index
-    data = await state.get_data()
-    current_teacher_index = data.get('current_teacher_index', 0) + 1
-    await state.update_data(current_teacher_index=current_teacher_index)
-
-    # Show the next teacher
-    await show_teacher(callback_query.message, state)
-
-@main_router.message(Form.student_select_time_topic)
-async def process_student_select_time_topic(message: types.Message, state: FSMContext):
-    time_topic = message.text
-    await state.update_data(time_topic=time_topic)
-
-    # Send request to the teacher
-    data = await state.get_data()
-    teacher = data.get('selected_teacher')
-    student = message.from_user
-
-    # Send message to the teacher
-    teacher_user_id = teacher['user_id']
-
-    await bot.send_message(
-        chat_id=teacher_user_id,
-        text=(
-            f"You have a new teaching request from {student.full_name} (@{student.username}).\n"
-            f"Time and Topic: {time_topic}\n"
-            "Do you accept this request?"
-        ),
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Accept", callback_data=f"accept_request {student.id}"),
-                    InlineKeyboardButton(text="Reject", callback_data=f"reject_request {student.id}")
-                ]
-            ]
-        )
-    )
-
-    await message.answer("Your request has been sent to the teacher. Please wait for their response.")
-    await state.clear()
-
-# Handlers for teacher's response
-@main_router.callback_query(lambda c: c.data.startswith("accept_request"))
-async def accept_request(callback_query: types.CallbackQuery):
-    await callback_query.answer()
-    student_user_id = int(callback_query.data.split()[1])
-
-    # Send contact information to both parties
-    teacher_user_id = callback_query.from_user.id
-
-    # Fetch teacher and student data
-    teacher_data = await fetch_teacher_data(teacher_user_id)
-    student_data = await fetch_user_data(student_user_id)
-
-    # Send teacher contact to student
-    await bot.send_message(
-        chat_id=student_user_id,
-        text=(
-            f"The teacher has accepted your request.\n"
-            f"Contact info: {teacher_data['contact']}"
-        )
-    )
-
-    # Send student contact to teacher
-    await bot.send_message(
-        chat_id=teacher_user_id,
-        text=(
-            f"You have accepted the request from {student_data['name']}.\n"
-            f"Contact info: {student_data['contact']}"
-        )
-    )
-
-@main_router.callback_query(lambda c: c.data.startswith("reject_request"))
-async def reject_request(callback_query: types.CallbackQuery):
-    await callback_query.answer()
-    student_user_id = int(callback_query.data.split()[1])
-
-    # Notify the student
-    await bot.send_message(
-        chat_id=student_user_id,
-        text="Unfortunately, the teacher has rejected your request."
-    )
-
-    # Acknowledge the teacher
-    await callback_query.message.answer("You have rejected the request.")
 
 
 
@@ -1303,166 +1031,6 @@ async def send_all_command(message: types.Message):
     else:
         await message.answer("You are not authorized to use this command.")
 
-
-# Handler for teachers to submit applications
-@main_router.message(F.text == TEXT_BECOME_TEACHER)
-async def become_teacher(message: types.Message, state: FSMContext):
-    if await ignore_old_messages(message):
-        return
-
-    if await is_user_banned(message.from_user.id):
-        await handle_banned_user(message)
-        return
-
-    # Start the teacher application process
-    await state.set_state(Form.teacher_subjects)
-    await message.answer("Please list the subjects you can teach, separated by commas.", reply_markup=ReplyKeyboardRemove())
-
-@main_router.message(Form.teacher_subjects)
-async def process_teacher_subjects(message: types.Message, state: FSMContext):
-    subjects = [subject.strip() for subject in message.text.split(',') if subject.strip()]
-    await state.update_data(teacher_subjects=subjects)
-    await state.set_state(Form.teacher_experience)
-    await message.answer("Please describe your teaching experience.")
-
-@main_router.message(Form.teacher_experience)
-async def process_teacher_experience(message: types.Message, state: FSMContext):
-    await state.update_data(teacher_experience=message.text)
-    await state.set_state(Form.teacher_price)
-    await message.answer("Please provide your price per hour.")
-
-@main_router.message(Form.teacher_price)
-async def process_teacher_price(message: types.Message, state: FSMContext):
-    await state.update_data(teacher_price=message.text)
-    await state.set_state(Form.teacher_availability)
-    await message.answer("Please provide your availability.")
-
-@main_router.message(Form.teacher_availability)
-async def process_teacher_availability(message: types.Message, state: FSMContext):
-    await state.update_data(teacher_availability=message.text)
-    await state.set_state(Form.teacher_resume)
-    await message.answer("Please provide a link to your resume.")
-
-@main_router.message(Form.teacher_resume)
-async def process_teacher_resume(message: types.Message, state: FSMContext):
-    await state.update_data(teacher_resume=message.text)
-    data = await state.get_data()
-
-    # Create the teacher application data (exclude 'id' to avoid conflicts)
-    teacher_application = {
-        'subjects': data['teacher_subjects'],
-        'experience': data['teacher_experience'],
-        'price': data['teacher_price'],
-        'availability': data['teacher_availability'],
-        'resume': data['teacher_resume'],
-        'verified': False  # Initially not verified
-    }
-
-    # Check if the user already exists in the 'telegram' table
-    existing_user = supabase.table("telegram").select("*").eq('user_id', message.from_user.id).execute().data
-
-    if existing_user:
-        # Update the existing user record with teacher application info
-        supabase.table("telegram").update(teacher_application).eq('user_id', message.from_user.id).execute()
-    else:
-        # If the user doesn't exist, insert a new record (include 'user_id')
-        teacher_application['user_id'] = message.from_user.id
-        supabase.table("telegram").insert(teacher_application).execute()
-
-    # Fetch the updated contact information
-    contact = supabase.table("telegram").select("contact").eq('user_id', message.from_user.id).execute().data
-
-    # Notify the admin for verification
-    admin_message = (
-        f"📋 <b>New Teacher Application</b>\n\n"
-        f"👤 <b>User ID:</b> {message.from_user.id}\n"
-        f"👤 <b>Name:</b> {teacher_application['name']}\n"
-        f"📚 <b>Subjects:</b> {', '.join(teacher_application['subjects'])}\n"
-        f"💼 <b>Experience:</b> {teacher_application['experience']}\n"
-        f"💰 <b>Price per hour:</b> {teacher_application['price']}\n"
-        f"🕒 <b>Availability:</b> {teacher_application['availability']}\n"
-        f"📄 <b>Resume:</b> {teacher_application['resume']}\n"
-        f"📞 <b>Contact:</b> {contact[0]['contact'] if contact else 'N/A'}\n"
-    )
-
-    await bot.send_message(
-        chat_id=admin_id,
-        text=admin_message,
-        reply_markup=InlineKeyboardMarkup(
-            inline_keyboard=[
-                [
-                    InlineKeyboardButton(text="Approve", callback_data=f"approve_teacher {message.from_user.id}"),
-                    InlineKeyboardButton(text="Reject", callback_data=f"reject_teacher {message.from_user.id}")
-                ]
-            ]
-        ),
-        parse_mode='HTML'
-    )
-
-    await message.answer("Your application has been submitted. We will review it and get back to you soon.")
-    await state.clear()
-
-
-# Admin handlers to approve or reject teacher applications
-@main_router.callback_query(lambda c: c.data.startswith("approve_teacher"))
-async def approve_teacher(callback_query: types.CallbackQuery):
-    teacher_user_id = int(callback_query.data.split()[1])
-
-    # Update the 'verified' status in the 'telegram' table
-    supabase.table("telegram").update({'verified': True}).eq('user_id', teacher_user_id).execute()
-
-    # Notify the teacher
-    await bot.send_message(
-        chat_id=teacher_user_id,
-        text="Congratulations! Your application has been approved, and you are now a verified teacher."
-    )
-
-    # Acknowledge the admin
-    await callback_query.answer("Teacher application approved.")
-    await callback_query.message.delete()
-
-@main_router.callback_query(lambda c: c.data.startswith("reject_teacher"))
-async def reject_teacher(callback_query: types.CallbackQuery):
-    teacher_user_id = int(callback_query.data.split()[1])
-
-    # Optionally, you can delete the application or keep it with 'verified': False
-    # Here, we'll notify the teacher about the rejection
-
-    # Notify the teacher
-    await bot.send_message(
-        chat_id=teacher_user_id,
-        text="We regret to inform you that your teacher application has been rejected."
-    )
-
-    # Acknowledge the admin
-    await callback_query.answer("Teacher application rejected.")
-    await callback_query.message.delete()
-
-# Function to fetch teachers from the 'telegram' table
-def fetch_teachers(field_of_interest):
-    # Fetch verified teachers matching the field of interest
-    response = supabase.table("telegram").select("*").eq('verified', True).execute()
-    all_teachers = response.data
-
-    # Filter teachers based on the field of interest and their subjects
-    matching_teachers = [
-        teacher for teacher in all_teachers
-        if field_of_interest.lower() in [subject.lower() for subject in teacher.get('subjects', [])]
-    ]
-
-    return matching_teachers
-
-# Function to format teacher profile for display
-def format_teacher_profile(teacher):
-    return (
-        f"📚 <b>Teacher Profile</b>\n\n"
-        f"👤 <b>Name:</b> {teacher.get('name', 'N/A')}\n"
-        f"📚 <b>Subjects:</b> {', '.join(teacher.get('subjects', []))}\n"
-        f"💼 <b>Experience:</b> {teacher.get('experience', 'N/A')}\n"
-        f"💰 <b>Price per hour:</b> {teacher.get('price', 'N/A')}\n"
-        f"🕒 <b>Availability:</b> {teacher.get('availability', 'N/A')}\n"
-        f"📄 <b>Resume:</b> {teacher.get('resume', 'N/A')}\n"
-    )
 
 
 
