@@ -256,16 +256,6 @@ async def menu(callback_query: types.CallbackQuery):
         return
     await callback_query.message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
-@main_router.message(Form.student_search_field)
-async def process_student_search_field(message: types.Message, state: FSMContext):
-    field_of_interest = message.text
-    await state.update_data(field_of_interest=field_of_interest)
-    
-    user_data = await fetch_user_data(message.from_user.id)
-    if not user_data:
-        await message.answer("Please create a profile first.")
-        return
-    
 
 
 
