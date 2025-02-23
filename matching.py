@@ -1,6 +1,10 @@
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGxiZGRqdmNsbGdjcXB2dnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MTU1MTEsImV4cCI6MjAzNTM5MTUxMX0.TyymllzljjCQsd7kUUGQ_zPgC_GLnkeV64KujZRyrQU"
