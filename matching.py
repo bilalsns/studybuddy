@@ -1,6 +1,10 @@
 from supabase import create_client
 from sentence_transformers import SentenceTransformer
 
+# Initialize SentenceTransformer model
+model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
+
+
 # Function to perform matchmaking using embeddings
 async def find_best_match(request, user_data):
     # Fetch data from the database
