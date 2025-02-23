@@ -9,7 +9,7 @@ from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from sentence_transformers import SentenceTransformer
-from sort import *
+
 
 # Timezone configuration
 server_timezone = "Asia/Tashkent"
