@@ -10,7 +10,6 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from matching import *
 
-
 # Timezone configuration
 server_timezone = "Asia/Tashkent"
 current_time = datetime.now(ZoneInfo(server_timezone))
@@ -45,7 +44,6 @@ MSG_NO_TOKENS = "You have no tokens. Please top up your tokens and try again."
 MSG_NO_MATCH = "No suitable match found. Please try again later."
 MSG_USER_INACTIVE = "Unfortunately, this user is no longer available for matchmaking."
 
-
 # Define states for the finite state machine
 class Form(StatesGroup):
     name = State()
@@ -66,9 +64,6 @@ class Form(StatesGroup):
     reported_user_id = State()
     broadcast_message = State()
     
-   
-
-
 main_router = Router()
 profile_router = Router()
 edit_router = Router()
@@ -90,10 +85,10 @@ async def is_user_banned(user_id):
     except:
         return False
 
-
 # Function to send a banned user message
 async def handle_banned_user(message: types.Message):
     await message.answer(MSG_BANNED)
+
 async def handle_banned_user_callback(callback: types.CallbackQuery):
     await callback.message.answer(MSG_BANNED)
 
@@ -111,9 +106,6 @@ async def format_profile(user_data):
         f"📨<b>Contact:</b> {user_data['contact']}\n"
     )
 
-
-
-
 # Helper function to create reply markup
 def create_main_menu():
     return ReplyKeyboardMarkup(
@@ -123,7 +115,6 @@ def create_main_menu():
                 KeyboardButton(text=TEXT_EDIT_PROFILE),
                 KeyboardButton(text=TEXT_MY_TOKENS)
             ]
-           
         ],
         resize_keyboard=True,
     )
@@ -156,13 +147,12 @@ async def process_profile_creation(state: FSMContext, user_data, user_id):
         "referral_count": 0,
         "token": 20,
         "daily_referral": 0,
-
     }).execute()
 
     # Handle referrals and token management
     referrer_id = data.get("referrer_id")
     print(referrer_id)
-    if referrer_id != None:
+    if referrer_id is not None:
         referrer_data = await fetch_user_data(referrer_id)
         if referrer_data:
             supabase.table("telegram").update({
@@ -174,21 +164,11 @@ async def process_profile_creation(state: FSMContext, user_data, user_id):
     await state.set_state(None)
     return "**Thank you! Your profile has been created/updated.**\n\nYou can now search for a study buddy:"
 
-
 # Ignore old messages
 bot_startup_time = current_time
 async def ignore_old_messages(message: types.Message):
     if message.date < bot_startup_time:
         await message.answer("This message was sent while the bot was offline and cannot be processed.")
-        return True
-    return False
-
-
-# bad words checker
-async def check_for_bad_words(message: types.Message, text_to_check: str) -> bool:
-    print(contains_dirty_words(text_to_check))
-    if contains_dirty_words(text_to_check):
-        await message.answer("Please avoid using inappropriate language. Try again.")
         return True
     return False
 
@@ -210,7 +190,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
         return
         
     referrer_id = str(message.text[7:])
-    await state.update_data(referrer_id = referrer_id)
+    await state.update_data(referrer_id=referrer_id)
 
     await message.answer(MSG_WELCOME, reply_markup=create_main_menu())
 
@@ -233,7 +213,7 @@ async def get_tokens(message: types.Message):
         timestamptz_str = user_data['last_search']
         last_datetime = datetime.fromisoformat(timestamptz_str)
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-        if (difference.days > 0): 
+        if difference.days > 0: 
             user_data['token'] += 15
         supabase.table("telegram").update({"last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()}).eq("user_id", user_data["user_id"]).execute()
         supabase.table("telegram").update({"token": user_data["token"]}).eq("user_id", user_data["user_id"]).execute()
@@ -248,19 +228,12 @@ async def copy_referral_link(callback_query: types.CallbackQuery):
     referral_link = f"https://t.me/{bot_username}?start={callback_query.from_user.id}"
     await callback_query.message.answer(f"Here is your referral link:\n{referral_link}\n\nShare this link with others to refer them to the bot.")
 
-
 @main_router.callback_query(lambda c: 'menu' in c.data)
 async def menu(callback_query: types.CallbackQuery):
     if await is_user_banned(callback_query.from_user.id):
         await handle_banned_user_callback(callback_query)
         return
     await callback_query.message.answer(MSG_WELCOME, reply_markup=create_main_menu())
-
-
-
-
-
-
 
 @main_router.message(F.text == TEXT_SEARCH_BUDDY)
 async def search_study_buddy(message: types.Message, state: FSMContext):
@@ -275,7 +248,7 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
     if not user_data:
         await state.set_state(Form.name)
         await message.answer(MSG_NO_PROFILE, reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
-        await message.answer(f"📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+        await message.answer("📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
         return
 
     if user_data['token'] > 0:
@@ -286,14 +259,12 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
         if timestamptz_str is not None:
             last_datetime = datetime.fromisoformat(timestamptz_str)
         else:
-            # Handle the case when timestamptz_str is None
-            # You can set a default value or return an error message
-            last_datetime = None  # or some default behavior
+            last_datetime = None
             await message.answer("No valid timestamp found for this user.")
-            return  # Optionally return early if there's nothing to process
+            return
         
         difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-        if (difference.days > 0): 
+        if difference.days > 0: 
             user_data['token'] += 15
 
         found_user = await find_best_match(request, user_data)
@@ -396,7 +367,7 @@ async def report_user(callback_query: types.CallbackQuery):
                 [
                     InlineKeyboardButton(text="wrong contact info", callback_data=f'wrong contact info {report_user_id}'),
                 ],
-                [   # InlineKeyboardButton(text="else", callback_data=f'report else {report_user_id}'),
+                [
                     InlineKeyboardButton(text="back", callback_data='back'),
                 ]
             ]
@@ -414,9 +385,7 @@ async def offensive_language_report(callback_query: types.CallbackQuery):
     reported_data = await fetch_user_data(reported_user_id)
     reporting_data = await fetch_user_data(callback_query.from_user.id)
 
-    # Fetch user info using get_chat
     user_info = await bot.get_chat(reported_user_id)
-    # Check if username is available
     reported_username = user_info.username or "username not set"
 
     await callback_query.message.answer("Thank you for informing us! We will review the reported account and ban it if it violates our rules.")
@@ -488,7 +457,6 @@ async def go_back(callback_query: types.CallbackQuery):
 
     await callback_query.message.answer("Returning to the previous menu.", reply_markup=create_main_menu())
 
-
 @main_router.callback_query(lambda c: 'ban' in c.data)
 async def ban_user(callback_query: types.CallbackQuery):
     reported_id = callback_query.data.split()[1]
@@ -499,7 +467,7 @@ async def ban_user(callback_query: types.CallbackQuery):
 @main_router.callback_query(lambda c: 'disapprove' in c.data)
 async def ban_user(callback_query: types.CallbackQuery):
     await callback_query.message.edit_reply_markup(reply_markup=None)
-    await callback_query.message.answer(f"The report for baning user was disapproved")
+    await callback_query.message.answer("The report for banning user was disapproved")
 
 @main_router.callback_query(lambda c: 'next' in c.data)
 async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext):
@@ -509,7 +477,6 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
         await handle_banned_user_callback(callback_query)
         return
     
-
     user_data = await fetch_user_data(callback_query.from_user.id)
     if not user_data or user_data['token'] <= 0:
         await callback_query.message.answer(MSG_NO_TOKENS)
@@ -521,7 +488,7 @@ async def next_studybuddy(callback_query: types.CallbackQuery, state: FSMContext
     timestamptz_str = user_data['last_search']
     last_datetime = datetime.fromisoformat(timestamptz_str)
     difference = datetime.now(ZoneInfo(server_timezone)) - last_datetime
-    if (difference.days > 0): 
+    if difference.days > 0: 
         user_data['token'] += 15
 
     found_user = await find_best_match(request, user_data)
@@ -577,7 +544,6 @@ async def accept(callback_query: types.CallbackQuery):
     # Fetch user info using get_chat
     match_user_info = await bot.get_chat(match_user_id)
     current_user_info = await bot.get_chat(match_user_id)
-    # Check if username is available
     match_username = match_user_info.username or "Username not set"
     current_username = current_user_info.username or "Username not set"
     
@@ -631,10 +597,8 @@ async def reject(callback_query: types.CallbackQuery):
 
     gender = "female" if not current_user_data["gender"] else "male"
     
-    # Fetch user info using get_chat
     match_user_info = await bot.get_chat(match_user_id)
     current_user_info = await bot.get_chat(match_user_id)
-    # Check if username is available
     match_username = match_user_info.username or "Username not set"
     current_username = current_user_info.username or "Username not set"
     
@@ -642,20 +606,17 @@ async def reject(callback_query: types.CallbackQuery):
         chat_id=match_user_id,
         text=(
             f"Unfortunately, your request for matching was declined 😔. \n\n"
-            f"People come and go. It really doesn't matter; what really matters is how you learn from the experience. And remember, blocking the bot doesn't help.\n\n"
-            f"<b>Fortunately, you still can find the right person using our bot 🥳.</b>\n\n"
-            f"PS: To get more matches, you can improve your profile."
+            "People come and go. It really doesn't matter; what really matters is how you learn from the experience. And remember, blocking the bot doesn't help.\n\n"
+            "<b>Fortunately, you still can find the right person using our bot 🥳.</b>\n\n"
+            "PS: To get more matches, you can improve your profile."
         ),
         parse_mode="HTML",
     )
     await bot.send_message(
         chat_id=callback_query.from_user.id,
-        text=(
-            f"<b>We appreciate your desicion.</b>"
-        ),
+        text="<b>We appreciate your desicion.</b>",
         parse_mode="HTML",
     )
-
 
 @main_router.message(F.text == TEXT_EDIT_PROFILE)
 async def create_edit_profile(message: types.Message, state: FSMContext):
@@ -670,7 +631,7 @@ async def create_edit_profile(message: types.Message, state: FSMContext):
     if not user_data:
         await state.set_state(Form.name)
         await message.answer(MSG_NO_PROFILE, reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
-        await message.answer(f"📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
+        await message.answer("📝<b>What is your name?</b>", reply_markup=ReplyKeyboardRemove(), parse_mode="HTML")
         return
 
     profile_text = await format_profile(user_data)
@@ -679,8 +640,7 @@ async def create_edit_profile(message: types.Message, state: FSMContext):
             [InlineKeyboardButton(text="Edit", callback_data="edit")],
             [InlineKeyboardButton(text="Save and Return", callback_data="save")]
         ]
-    ), parse_mode="HTML"
-    )
+    ), parse_mode="HTML")
     await state.update_data(prev_message_id=msg.message_id)
 
 @edit_router.callback_query(F.data == "save")
@@ -755,8 +715,6 @@ async def process_edit_interests(message: types.Message, state: FSMContext):
         return
 
     interests_text = message.text
-    if await check_for_bad_words(message, interests_text):
-        return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
         await message.answer("📋 <b>Please list five to ten interests, separated by commas.</b>", parse_mode='HTML')
@@ -775,8 +733,6 @@ async def process_edit_intro(message: types.Message, state: FSMContext):
         return
 
     intro = message.text
-    if await check_for_bad_words(message, intro):
-        return
     if await check_for_char_length(message, intro):
         return
     await state.update_data(intro=intro)
@@ -796,7 +752,7 @@ async def process_edit_contact(message: types.Message, state: FSMContext):
     await state.update_data(contact=contact_info)
 
     user_id = message.from_user.id
-    supabase.table("telegram").update({"contact": contact}).eq("user_id", user_id).execute()
+    supabase.table("telegram").update({"contact": contact_info}).eq("user_id", user_id).execute()
 
     await message.answer("✅ <b>Your contact information has been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
@@ -871,8 +827,6 @@ async def process_interests(message: types.Message, state: FSMContext):
     logging.info("Processing interests")
     
     interests_text = message.text
-    if await check_for_bad_words(message, interests_text):
-        return
     interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
     if len(interests) < 5 or len(interests) > 10:
         await message.answer("⚠️ <i>Please, list five to ten interests, separated by commas.</i>", parse_mode='HTML')
@@ -892,8 +846,6 @@ async def process_intro(message: types.Message, state: FSMContext):
     logging.info("Processing intro")
     
     intro = message.text
-    if await check_for_bad_words(message, intro):
-        return
     if await check_for_char_length(message, intro):
         return
     await state.update_data(intro=intro)
@@ -921,19 +873,15 @@ async def process_contact(message: types.Message, state: FSMContext):
         parse_mode='Markdown'
     )
 
-
 @main_router.message(Command("send_all"))
 async def send_all_command(message: types.Message):
-    # Check if the user is the admin
     if message.from_user.id == int(admin_id):
-        # Get the message after the "/send_all " command
         broadcast_content = message.text[len("/send_all "):].strip()
 
         if not broadcast_content:
             await message.answer("Please provide a message to broadcast after the /send_all command.")
             return
         
-        # Broadcast the message to all users in users    
         users = supabase.table("telegram").select("user_id").eq("is_active", True).execute().data
         for user_id in users:
             try:
@@ -941,14 +889,9 @@ async def send_all_command(message: types.Message):
             except Exception as e:
                 print(f"Failed to send message to {user_id}: {e}")
 
-        # Notify the admin that the message has been broadcasted
         await message.answer("The message has been broadcast to all users.")
     else:
         await message.answer("You are not authorized to use this command.")
-
-
-
-
 
 if __name__ == '__main__':
     import asyncio
