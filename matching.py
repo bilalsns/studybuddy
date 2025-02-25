@@ -5,6 +5,10 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 
+# Timezone configuration
+server_timezone = "Asia/Tashkent"
+current_time = datetime.now(ZoneInfo(server_timezone))
+
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGxiZGRqdmNsbGdjcXB2dnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MTU1MTEsImV4cCI6MjAzNTM5MTUxMX0.TyymllzljjCQsd7kUUGQ_zPgC_GLnkeV64KujZRyrQU"
