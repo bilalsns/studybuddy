@@ -8,7 +8,6 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemo
 from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from admin import *
 
 @main_router.callback_query(lambda c: 'wrong contact info' in c.data)
 async def wrong_contact_info_report(callback_query: types.CallbackQuery):
