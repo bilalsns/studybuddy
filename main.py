@@ -9,19 +9,23 @@ from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from matching import *
+from dotenv import load_dotenv
+import os
+load_dotenv() 
 
 # Timezone configuration
 server_timezone = "Asia/Tashkent"
 current_time = datetime.now(ZoneInfo(server_timezone))
 print(current_time)
 
+
 # Supabase configuration
 url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBnaGxiZGRqdmNsbGdjcXB2dnhsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk4MTU1MTEsImV4cCI6MjAzNTM5MTUxMX0.TyymllzljjCQsd7kUUGQ_zPgC_GLnkeV64KujZRyrQU"
+key = os.getenv("SUPABASE_API_KEY")
 supabase = create_client(url, key)
 
 # Bot configuration
-API_TOKEN = '7495888476:AAGymgKPkmjYXISWNGBMtsx1XD3JC8KP7XA'
+API_TOKEN = os.getenv("TELEGRAM_API_KEY")
 bot_username = 'up2matesbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
