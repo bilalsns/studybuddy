@@ -9,6 +9,8 @@ from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+admin_id = "6193719398"
+
 @main_router.callback_query(lambda c: 'wrong contact info' in c.data)
 async def wrong_contact_info_report(callback_query: types.CallbackQuery):
     """
