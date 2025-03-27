@@ -8,6 +8,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemo
 from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from main import main_router
 
 admin_id = "6193719398"
 
