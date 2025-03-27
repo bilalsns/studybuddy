@@ -9,8 +9,9 @@ from aiogram.filters import Command
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from matching import *
-from admin import *
+from config import TOKEN
 from dotenv import load_dotenv
+
 import os
 load_dotenv() 
 
@@ -26,11 +27,11 @@ key = os.getenv("SUPABASE_API_KEY")
 supabase = create_client(url, key)
 
 # Bot configuration
-API_TOKEN = os.getenv("TELEGRAM_API_KEY")
+
 bot_username = 'up2matesbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
-bot = Bot(token=API_TOKEN)
+bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
