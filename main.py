@@ -30,6 +30,7 @@ supabase = create_client(url, key)
 bot_username = 'up2matesbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
+TOKEN = os.getenv("TELEGRAM_API")
 bot = Bot(token=TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
