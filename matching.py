@@ -16,90 +16,50 @@ supabase = create_client(url, key)
 # Initialize SentenceTransformer model
 model = SentenceTransformer("paraphrase-MiniLM-L3-v2")
 
-async def fetch_users_in_batches(batch_size=100):
-    """Fetch users from database in batches"""
-    all_users = []
-    offset = 0
+async def fetch_candidate_users(user_data, include_history=True):
+    """Fetch candidate users from the database with optimized filters"""
+    user_id = str(user_data['id'])
+    history = user_data.get('history', []) or []
     
-    while True:
-        batch = supabase.table("telegram").select("*").range(offset, offset + batch_size - 1).execute().data
-        if not batch:
-            break
-        all_users.extend(batch)
-        offset += batch_size
+    query = (
+        supabase.table("telegram")
+        .select("id, interests, gender, age, origin, bio, contact, user_id")
+        .eq("is_banned", False)
+        .neq("id", user_id)
+    )
     
-    return all_users
-
-async def fetch_banned_users():
-    """Fetch all banned user IDs"""
-    banned = supabase.table("telegram").select("id").eq("is_banned", True).execute().data
-    return {str(b['id']) for b in banned}
+    if include_history and history:
+        query = query.not_.in_("id", history)
+    
+    return query.execute().data
 
 async def find_best_match(request, user_data):
     try:
-        # Fetch all users and banned list
-        all_users = await fetch_users_in_batches()
-        banned_list = await fetch_banned_users()
+        # Fetch candidates (first attempt excludes history)
+        candidates = await fetch_candidate_users(user_data, include_history=True)
         
-        # Convert user history to a set of strings
-        history = set(str(id) for id in (user_data['history'] or []))
-        user_id_str = str(user_data['id'])
+        # If no candidates, relax history constraint
+        if not candidates:
+            candidates = await fetch_candidate_users(user_data, include_history=False)
+            if not candidates:
+                return None
         
-        # Filter out banned users, history, and self
-        candidate_users = [
-            user for user in all_users
-            if (str(user['id']) not in banned_list and
-                str(user['id']) not in history and
-                str(user['id']) != user_id_str)
-        ]
+        # Encode all candidate interests in one batch
+        candidate_interests = [" ".join(user['interests']) for user in candidates]
+        query_embedding = model.encode(request)
+        candidate_embeddings = model.encode(candidate_interests)
         
-        # If no candidates after filtering, relax the history constraint
-        if not candidate_users:
-            candidate_users = [
-                user for user in all_users
-                if (str(user['id']) not in banned_list and
-                    str(user['id']) != user_id_str)
-            ]
+        # Compute similarities in one operation
+        similarities = np.dot(candidate_embeddings, query_embedding.T).flatten()
+        best_idx = np.argmax(similarities)
+        best_match = candidates[best_idx]
         
-        if not candidate_users:
-            return None
-            
-        # Process in batches for embeddings
-        batch_size = 100
-        best_match = None
-        best_score = -1
+        # Update history (manually append to array)
+        new_history = user_data.get('history', []) + [str(best_match['id'])]
         
-        for i in range(0, len(candidate_users), batch_size):
-            batch = candidate_users[i:i + batch_size]
-            
-            # Prepare batch data
-            batch_interests = [" ".join(user['interests']) for user in batch]
-            
-            # Encode query and batch interests
-            query_embedding = model.encode(request)
-            passage_embeddings = model.encode(batch_interests)
-            
-            # Compute similarities
-            similarities = model.similarity(query_embedding, passage_embeddings)[0]
-            
-            # Find best match in current batch
-            batch_best_idx = np.argmax(similarities)
-            batch_best_score = similarities[batch_best_idx]
-            
-            if batch_best_score > best_score:
-                best_score = batch_best_score
-                best_match = batch[batch_best_idx]
-        
-        if not best_match:
-            return None
-            
-        # Update user history
-        new_history = list(history) + [str(best_match['id'])]
-        formatted_history = f"{{{','.join(new_history)}}}"
-        
-        # Update database
+        # Update database (use raw SQL for array append if needed)
         supabase.table("telegram").update({
-            "history": formatted_history,
+            "history": new_history,
             "token": user_data["token"] - 1,
             "last_search": datetime.now(ZoneInfo(server_timezone)).isoformat()
         }).eq("user_id", user_data["user_id"]).execute()
