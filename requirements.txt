@@ -4,4 +4,4 @@ supabase==2.5.1
 python-dateutil==2.9.0
 python-dotenv==1.0.1 
 tzdata==2021.5
-transformers==4.51.0
+transformers==4.50.3
