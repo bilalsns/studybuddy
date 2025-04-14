@@ -1,0 +1,162 @@
+import logging
+from aiogram import Bot, Dispatcher, executor, types
+
+API_TOKEN = 'BOT_TOKEN_HERE'
+
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
+
+translations = {
+    "uz": {
+        "language_name": "O'zbekcha",
+        "tests": "Mashhur testlar:",
+        "language_examinations": "Til imtihonlari:",
+        "AP": "AP imtihonlari:",
+        "olympiads": "Olimpiadalar:",
+        "exchange_programs": "Almashish dasturlari:",
+        "summer_programs": "Yozgi dasturlar:",
+        "scholarships": "Stipendiyalar:",
+        "academic_support": "Boshqa akademik qo'llab-quvvatlash:",
+        "general_interests": "Umumiy qiziqishlar ro'yxati:"
+    },
+    "ru": {
+        "language_name": "Русский",
+        "tests": "Популярные тесты:",
+        "language_examinations": "Языковые экзамены:",
+        "AP": "Advanced Placement (AP):",
+        "olympiads": "Олимпиады:",
+        "exchange_programs": "Программы обмена:",
+        "summer_programs": "Летние программы:",
+        "scholarships": "Стипендии:",
+        "academic_support": "Другие академические поддержки:",
+        "general_interests": "Список общих интересов:"
+    },
+    "en": {
+        "language_name": "English",
+        "tests": "Popular tests:",
+        "language_examinations": "Language examination:",
+        "AP": "Advanced Placement (AP):",
+        "olympiads": "Olympiads:",
+        "exchange_programs": "Exchange Programs:",
+        "summer_programs": "Summer programs:",
+        "scholarships": "Scholarship Support for:",
+        "academic_support": "Other Academic Support:",
+        "general_interests": "List of General Interests:"
+    }
+}
+
+Test_prep = ["SAT", "ACT", "IELTS", "TOEFL", "Duolingo", "DTM", "Milliy Sertifikat", "GRE", "GMAT"]
+
+Language_examinations = ["Turkish", "Arabic", "English", "German", "French"]
+
+AP_classes = [
+    "AP Calculus BC", "AP Calculus AB", "AP Biology", "AP Chemistry",
+    "AP Microeconomics", "AP Macroeconomics", "AP Statistics",
+    "AP Psychology", "AP History", "AP Physics"
+]
+
+Olympiads = [
+    "Math", "Informatics", "Chemistry", "Physics", "Biology", "Economics",
+    "Computer Science", "Linguistics", "History"
+]
+
+Exchange_programs = ["FLEX", "UGRAD", "UWC", "PASCH", "ERASMUS"]
+
+Summer_programs = [
+    "YYGS", "YIRLI", "RSI", "PROMYS", "LaunchX", "NYUAD Design Lab", "SUMaC", "ROSS"
+]
+
+Scholarship_support = [
+    "DAAD - Germany", "DSU - Italy", "GKS - Korea", "EYUF",
+    "CGS - China", "Turkiye Burslari", "Stipendium Hungaricum",
+    "MEXT - Japan", "Lester B. Scholarship", "UBC Scholarship"
+]
+
+academic_support = [
+    "College Application", "Extracurricular Building", "Writing Research",
+    "Essay Program", "Consultation 1v1"
+]
+
+user_interests = ["Movies", "Art", "Music", "Sports", "Anime", "TV Shows", "Cartoons"]
+
+user_language = {}
+
+def language_keyboard():
+    keyboard = types.InlineKeyboardMarkup(row_width=3)
+    buttons = [
+        types.InlineKeyboardButton(text=translations["uz"]["language_name"], callback_data="lang_uz"),
+        types.InlineKeyboardButton(text=translations["ru"]["language_name"], callback_data="lang_ru"),
+        types.InlineKeyboardButton(text=translations["en"]["language_name"], callback_data="lang_en")
+    ]
+    keyboard.add(*buttons)
+    return keyboard
+
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    # Default til sifatida O'zbekcha tanlanadi
+    user_language[message.from_user.id] = "uz"
+    welcome_text = (
+        "Tilni tanlang / Выберите язык / Select language:\n"
+        "Iltimos, tilni tanlash tugmalaridan birini bosing."
+    )
+    await message.answer(welcome_text, reply_markup=language_keyboard())
+
+@dp.message_handler(commands=['switch'])
+async def switch_lang_command(message: types.Message):
+    await message.answer("Tilni o'zgartirish uchun, iltimos, quyidagi tugmalardan birini bosing:", reply_markup=language_keyboard())
+
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('lang_'))
+async def process_language(callback_query: types.CallbackQuery):
+    lang_code = callback_query.data.split('_')[1]
+    user_language[callback_query.from_user.id] = lang_code
+    confirmation = f"Tanlangan til: {translations[lang_code]['language_name']}"
+    await bot.answer_callback_query(callback_query.id, text=confirmation)
+    await bot.send_message(callback_query.from_user.id, "Ma'lumotlarni ko'rsatish uchun /data buyrug'ini yuboring.")
+
+@dp.message_handler(commands=['data'])
+async def send_data(message: types.Message):
+    lang_code = user_language.get(message.from_user.id, "uz")
+    tr = translations[lang_code]
+
+    text = f"{tr['tests']}\n"
+    for item in Test_prep:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['language_examinations']}\n"
+    for item in Language_examinations:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['AP']}\n"
+    for item in AP_classes:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['olympiads']}\n"
+    for item in Olympiads:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['exchange_programs']}\n"
+    for item in Exchange_programs:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['summer_programs']}\n"
+    for item in Summer_programs:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['scholarships']}\n"
+    for item in Scholarship_support:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['academic_support']}\n"
+    for item in academic_support:
+        text += f" - {item}\n"
+
+    text += f"\n{tr['general_interests']}\n"
+    for item in user_interests:
+        text += f" - {item}\n"
+
+    await message.answer(text)
+
+if __name__ == '__main__':
+    executor.start_polling(dp, skip_updates=True)
