@@ -10,9 +10,28 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 from matching import *
 from dotenv import load_dotenv
-
+from interests_keyboard import categories
 import os
 load_dotenv() 
+
+
+def get_all_exams(exam_list):
+    all_exams = []
+    for item in exam_list:
+        if isinstance(item, list):
+            for sub_item in item[1:]:
+                if isinstance(sub_item, list):
+                    all_exams.append(sub_item[0])
+                else:
+                    all_exams.append(sub_item)
+        else:
+            all_exams.append(item)
+    return all_exams
+
+
+
+
+
 
 # Timezone configuration
 server_timezone = "Asia/Tashkent"
@@ -27,7 +46,7 @@ supabase = create_client(url, key)
 
 # Bot configuration
 
-bot_username = 'up2matesbot'
+bot_username = '@chilldlabourbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("TELEGRAM_API_KEY")
@@ -683,14 +702,130 @@ async def edit_profile(callback_query: types.CallbackQuery, state: FSMContext):
     )
     await callback_query.answer()
 
-@edit_router.callback_query(F.data.in_({"edit_age", "edit_interests", "edit_intro", "edit_contact"}))
+@edit_router.callback_query(F.data == "edit_interests")
+async def process_edit_interests_callback(callback: types.CallbackQuery, state: FSMContext):
+    await state.set_state(Form.edit_interests)
+    await state.update_data(selected_interests=[])
+    
+    # Create category keyboard
+    keyboard = []
+    for category in categories:
+        keyboard.append([InlineKeyboardButton(text=category, callback_data=f"cat_{category}")])
+    keyboard.append([InlineKeyboardButton(text="Done ✅", callback_data="done_interests")])
+    
+    await callback.message.answer(
+        "<b>Select a category:</b>",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+    # Handler for category selection
+@edit_router.callback_query(F.data.startswith("cat_"))
+async def select_category(callback: types.CallbackQuery, state: FSMContext):
+    category_name = callback.data.split("_", 1)[1]
+    data = await state.get_data()
+    selected_interests = data.get('selected_interests', [])
+
+    # Create subcategory keyboard + category toggle
+    keyboard = [
+        [InlineKeyboardButton(
+            text=f"✅ All {category_name}" if category_name in selected_interests else f"All {category_name}",
+            callback_data=f"toggle_cat_{category_name}"
+        )]
+    ]
+
+    for interest in categories[category_name]:
+        text = f"✅ {interest}" if interest in selected_interests else interest
+        keyboard.append([InlineKeyboardButton(text=text, callback_data=f"intr_{category_name}_{interest}")])
+
+    keyboard.append([InlineKeyboardButton(text="🔙 Back", callback_data="back_to_categories")])
+
+    await callback.message.edit_text(
+        f"<b>{category_name}:</b>",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+        parse_mode="HTML"
+    )
+    await callback.answer()
+
+@edit_router.callback_query(F.data.startswith("toggle_cat_"))
+async def toggle_category(callback: types.CallbackQuery, state: FSMContext):
+    category = callback.data.split("_", 2)[2]
+    data = await state.get_data()
+    selected_interests = data.get('selected_interests', [])
+
+    # Toggle category
+    if category in selected_interests:
+        selected_interests.remove(category)
+    else:
+        selected_interests.append(category)
+
+    await state.update_data(selected_interests=selected_interests)
+
+    # Rebuild the subcategory keyboard (same logic as in select_category)
+    keyboard = [
+        [InlineKeyboardButton(
+            text=f"✅ All {category}" if category in selected_interests else f"All {category}",
+            callback_data=f"toggle_cat_{category}"
+        )]
+    ]
+    for interest in categories[category]:
+        text = f"✅ {interest}" if interest in selected_interests else interest
+        keyboard.append([InlineKeyboardButton(text=text, callback_data=f"intr_{category}_{interest}")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Back", callback_data="back_to_categories")])
+
+    await callback.message.edit_reply_markup(
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
+    )
+    await callback.answer()
+
+
+@edit_router.callback_query(F.data.startswith("intr_"))
+async def toggle_interest(callback: types.CallbackQuery, state: FSMContext):
+    _, category, interest = callback.data.split("_", 2)
+    data = await state.get_data()
+    selected_interests = data.get('selected_interests', [])
+    
+    if interest in selected_interests:
+        selected_interests.remove(interest)
+    else:
+        selected_interests.append(interest)
+    
+    await state.update_data(selected_interests=selected_interests)
+    
+    # Update the keyboard
+    keyboard = []
+    for intr in categories[category]:
+        text = f"✅ {intr}" if intr in selected_interests else intr
+        keyboard.append([InlineKeyboardButton(text=text, callback_data=f"intr_{category}_{intr}")])
+    keyboard.append([InlineKeyboardButton(text="🔙 Back", callback_data="back_to_categories")])
+    
+    await callback.message.edit_reply_markup(
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard)
+    )
+    await callback.answer()
+
+# Back to categories handler
+@edit_router.callback_query(F.data == "back_to_categories")
+async def back_to_categories(callback: types.CallbackQuery, state: FSMContext):
+    # Rebuild category keyboard
+    keyboard = []
+    for category in categories:
+        keyboard.append([InlineKeyboardButton(text=category, callback_data=f"cat_{category}")])
+    keyboard.append([InlineKeyboardButton(text="Done ✅", callback_data="done_interests")])
+    
+    await callback.message.edit_text(
+        "<b>Select a category:</b>",
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=keyboard),
+        parse_mode="HTML"
+    )
+    await callback.answer()    
+
+@edit_router.callback_query(F.data.in_({"edit_age", "edit_intro", "edit_contact"}))
 async def process_edit_callback(callback_query: types.CallbackQuery, state: FSMContext):
     if callback_query.data == "edit_age":
         await state.set_state(Form.edit_age)
         await callback_query.message.answer("<b>📅 Please enter your new age:</b>", parse_mode='HTML')
-    elif callback_query.data == "edit_interests":
-        await state.set_state(Form.edit_interests)
-        await callback_query.message.answer("<b>📋 Please list five to ten interests, separated by commas:</b>", parse_mode='HTML')
     elif callback_query.data == "edit_intro":
         await state.set_state(Form.edit_intro)
         await callback_query.message.answer("<b>💬 Please enter your new introduction:</b>", parse_mode='HTML')
@@ -715,23 +850,28 @@ async def process_edit_age(message: types.Message, state: FSMContext):
     await message.answer("✅ <b>Your age has been updated.</b>", parse_mode='HTML')
     await create_edit_profile(message, state)
 
-@edit_router.message(Form.edit_interests)
-async def process_edit_interests(message: types.Message, state: FSMContext):
-    if await ignore_old_messages(message):
+
+
+
+
+# Add handler for done button
+@edit_router.callback_query(F.data == "done_interests")
+async def done_interests(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    selected_interests = data.get('selected_interests', [])
+
+    if len(selected_interests) < 5 or len(selected_interests) > 10:
+        await callback.answer("⚠️ Please select between 5 and 10 interests or categories.", show_alert=True)
         return
 
-    interests_text = message.text
-    interests = [interest.strip() for interest in interests_text.split(',') if interest.strip()]
-    if len(interests) < 5 or len(interests) > 10:
-        await message.answer("📋 <b>Please list five to ten interests, separated by commas.</b>", parse_mode='HTML')
-        return
-    await state.update_data(interests=interests)
+    user_id = callback.from_user.id
+    supabase.table("telegram").update({"interests": selected_interests}).eq("user_id", user_id).execute()
 
-    user_id = message.from_user.id
-    supabase.table("telegram").update({"interests": interests}).eq("user_id", user_id).execute()
+    await callback.message.delete()
+    await callback.message.answer("✅ <b>Interests updated successfully!</b>", parse_mode="HTML")
+    await create_edit_profile(callback.message, state)
 
-    await message.answer("✅ <b>Your interests have been updated.</b>", parse_mode='HTML')
-    await create_edit_profile(message, state)
+
 
 @edit_router.message(Form.edit_intro)
 async def process_edit_intro(message: types.Message, state: FSMContext):
@@ -819,11 +959,7 @@ async def process_location(message: types.Message, state: FSMContext):
 
     logging.info("Processing location")
     await state.update_data(location=message.text)
-    await state.set_state(Form.interests)
-    await message.answer(
-        "<b>🔎 List five to ten activities, hobbies, or interests of yours.</b>\n<i>Important: separate them by commas.</i>",
-        parse_mode='HTML'
-    )
+
 
 @profile_router.message(Form.interests)
 async def process_interests(message: types.Message, state: FSMContext):
