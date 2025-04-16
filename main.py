@@ -1,4 +1,4 @@
-mport logging
+import logging
 from supabase import create_client
 from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.fsm.state import State, StatesGroup
