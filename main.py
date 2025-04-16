@@ -46,7 +46,7 @@ supabase = create_client(url, key)
 
 # Bot configuration
 
-bot_username = '@chilldlabourbot'
+bot_username = '@up2matesbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("TELEGRAM_API_KEY")
