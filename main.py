@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from aiogram import Bot, Dispatcher, types, F, Router, executor
+from aiogram import Bot, Dispatcher, types, F, Router  # executor olib tashlandi
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -84,7 +84,7 @@ async def select_language(message: types.Message):
 
 @lang_router.callback_query_handler(lambda c: c.data and c.data.startswith('lang_'))
 async def process_language(callback_query: types.CallbackQuery):
-    lang_code = callback_query.data.split('_')[1]  # 'uz', 'ru', yoki 'en'
+    lang_code = callback_query.data.split('_')[1]  # 'uz', 'ru' yoki 'en'
     user_language[callback_query.from_user.id] = lang_code
     tr = translations[lang_code]
     confirmation_text = tr["chosen_lang_message"] + tr["language_name"]
@@ -120,7 +120,7 @@ key = os.getenv("SUPABASE_API_KEY")
 supabase = create_client(url, key)
 
 # BOT CONFIGURATION
-bot_username = '@up2matesbot'
+bot_username = '@chilldlabourbot'
 admin_id = "6193719398"
 logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("TELEGRAM_API_KEY")
@@ -380,7 +380,6 @@ async def search_study_buddy(message: types.Message, state: FSMContext):
             user_data['token'] += 15
 
         found_user = await find_best_match(request, user_data)
-
         if found_user:
             await state.update_data(match_info=found_user)
             supabase.table("telegram").update({"token": user_data["token"] - 1}).eq("user_id", user_data['user_id']).execute()
