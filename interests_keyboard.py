@@ -18,6 +18,5 @@ categories = {
                                                 "MEXT - Japan", "Lester B. Scholarship", "UBC Scholarship"],
 "Other Academic Interests": ["Undergraduate Admissions to foreign universities", "Graduate Admissions to foreign universities",
                                  "Application to International Programs", "Research Paper", "Conducting a research Project"],
-
-    "General Interests": ["Movies", "TV Shows", "Cartoons", "Art", "Cooking", "Gaming", "Running", "Football", "Basketball", "Tennis", "UFC", "Boxing"]
+"General Interests": ["Movies", "TV Shows", "Cartoons", "Art", "Cooking", "Gaming", "Running", "Football", "Basketball", "Tennis", "UFC", "Boxing"]
 }
