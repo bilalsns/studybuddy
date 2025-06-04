@@ -21,9 +21,10 @@ Up2Mates is an AI-powered Telegram bot that helps students find ideal study budd
 - FSM (Finite State Machine for managing conversation flows)
 - dotenv for environment configuration
 
-## 📦 Setup Instructions
+🤝 Contributing
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/your-username/up2mates.git
-   cd up2mates
+If you’d like to contribute, feel free to fork the repo, submit issues, or make pull requests!
+
+📄 License
+
+This project is licensed under the MIT License.
