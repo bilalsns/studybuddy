@@ -40,14 +40,14 @@ print(current_time)
 
 
 # Supabase configuration
-url = "https://pghlbddjvcllgcqpvvxl.supabase.co"
+url = URL # your url
 key = os.getenv("SUPABASE_API_KEY")
 supabase = create_client(url, key)
 
 # Bot configuration
 
 bot_username = '@up2matesbot'
-admin_id = "6193719398"
+admin_id = ID # admin id
 logging.basicConfig(level=logging.INFO)
 TOKEN = os.getenv("TELEGRAM_API_KEY")
 bot = Bot(token=TOKEN)
